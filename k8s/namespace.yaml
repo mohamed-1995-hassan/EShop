@@ -1,0 +1,67 @@
+# Namespaces for different environments
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: eshop-staging
+  labels:
+    environment: staging
+    app.kubernetes.io/name: eshop
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: eshop-production
+  labels:
+    environment: production
+    app.kubernetes.io/name: eshop
+
+---
+# Resource Quotas for Staging
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: staging-quota
+  namespace: eshop-staging
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: 8Gi
+    limits.cpu: "8"
+    limits.memory: 16Gi
+    pods: "20"
+    services: "10"
+
+---
+# Resource Quotas for Production
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: production-quota
+  namespace: eshop-production
+spec:
+  hard:
+    requests.cpu: "16"
+    requests.memory: 32Gi
+    limits.cpu: "32"
+    limits.memory: 64Gi
+    pods: "100"
+    services: "20"
+
+---
+# LimitRange for default container limits
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: eshop-production
+spec:
+  limits:
+    - default:
+        cpu: "500m"
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+      type: Container

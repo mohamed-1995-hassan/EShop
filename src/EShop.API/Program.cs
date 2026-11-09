@@ -62,6 +62,21 @@ builder.Services.AddScoped<IAuctionRepository, AuctionRepository>();
 builder.Services.AddScoped<IBundleRepository, BundleRepository>();
 builder.Services.AddScoped<IDigitalProductRepository, DigitalProductRepository>();
 
+// Additional 7 Aggregate Repositories (Affiliate, Coupon, Catalog, Analytics, Content, Support, Supplier)
+builder.Services.AddScoped<IAffiliateRepository, AffiliateRepository>();
+builder.Services.AddScoped<ICouponRepository, CouponRepository>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<ISalesReportRepository, SalesReportRepository>();
+builder.Services.AddScoped<ICustomerInsightRepository, CustomerInsightRepository>();
+builder.Services.AddScoped<IProductPerformanceRepository, ProductPerformanceRepository>();
+builder.Services.AddScoped<IBannerRepository, BannerRepository>();
+builder.Services.AddScoped<ILandingPageRepository, LandingPageRepository>();
+builder.Services.AddScoped<IFaqRepository, FaqRepository>();
+builder.Services.AddScoped<IBlogPostRepository, BlogPostRepository>();
+builder.Services.AddScoped<ISupportTicketRepository, SupportTicketRepository>();
+builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
+builder.Services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
+
 // Domain Event Dispatcher
 builder.Services.AddScoped<IDomainEventDispatcher, MediatRDomainEventDispatcher>();
 
@@ -84,12 +99,14 @@ builder.Services.AddSwaggerGen(c =>
         Description = """
             A complete Domain-Driven Design demo with:
             
-            AGGREGATES (20 total):
+            AGGREGATES (27 total):
             - Order, Customer, Product, Payment, Shipment
             - Cart, Promotion, Review, Return, Inventory
             - Wishlist, Subscription, GiftCard, Vendor
             - Tax Configuration, Currency Configuration
             - Loyalty Program, Auction, Bundle, Digital Product
+            - Affiliate, Coupon, Catalog/Category, Analytics
+            - Content (Banner, FAQ, Blog), Support, Supplier
             
             PATTERNS:
             - Rich Domain Model with business rules
@@ -132,24 +149,26 @@ Console.WriteLine("""
     ║                                                                           ║
     ╠═══════════════════════════════════════════════════════════════════════════╣
     ║                                                                           ║
-    ║  AGGREGATES (20 total):                                                   ║
+    ║  AGGREGATES (27 total):                                                   ║
     ║  ──────────────────────                                                   ║
     ║  • Order          • Customer        • Product        • Payment            ║
     ║  • Shipment       • Cart            • Promotion      • Review             ║
     ║  • Return         • Inventory       • Wishlist       • Subscription       ║
     ║  • GiftCard       • Vendor          • Tax            • Currency           ║
     ║  • Loyalty        • Auction         • Bundle         • DigitalProduct     ║
+    ║  • Affiliate      • Coupon          • Catalog        • Analytics          ║
+    ║  • Content        • Support         • Supplier                            ║
     ║                                                                           ║
     ║  PATTERNS DEMONSTRATED:                                                   ║
     ║  ─────────────────────                                                    ║
     ║  ✓ Rich Domain Model (aggregates with business rules)                     ║
     ║  ✓ Value Objects (Money, Address - immutable)                             ║
     ║  ✓ CQRS (Commands and Queries separation)                                 ║
-    ║  ✓ Domain Events (50+ events for all aggregates)                          ║
+    ║  ✓ Domain Events (70+ events for all aggregates)                          ║
     ║  ✓ Repository Pattern (interface in Domain)                               ║
     ║  ✓ Clean Architecture layers                                              ║
     ║                                                                           ║
-    ║  API ENDPOINTS (20 controllers):                                          ║
+    ║  API ENDPOINTS (27 controllers):                                          ║
     ║  ───────────────────────────────                                          ║
     ║  /api/orders           - Order management                                 ║
     ║  /api/cart             - Shopping cart                                    ║
@@ -170,6 +189,13 @@ Console.WriteLine("""
     ║  /api/auctions         - Bidding system                                   ║
     ║  /api/bundles          - Product bundling                                 ║
     ║  /api/digital-products - Downloads & licenses                             ║
+    ║  /api/affiliates       - Affiliate marketing program                      ║
+    ║  /api/coupons          - Coupon management                                ║
+    ║  /api/categories       - Product categories                               ║
+    ║  /api/analytics        - Sales & customer analytics                       ║
+    ║  /api/content          - Banners, FAQ, Blog posts                         ║
+    ║  /api/support          - Support tickets                                  ║
+    ║  /api/suppliers        - Supplier & purchase orders                       ║
     ║                                                                           ║
     ║  Open Swagger UI at: https://localhost:5001/swagger                       ║
     ║                                                                           ║

@@ -1,0 +1,36 @@
+# Kustomize Configuration
+# Apply with: kubectl apply -k k8s/
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: default
+
+resources:
+  - deployment.yaml
+  - infrastructure.yaml
+  - ingress.yaml
+  - monitoring.yaml
+
+# Common labels for all resources
+commonLabels:
+  app.kubernetes.io/name: eshop
+  app.kubernetes.io/part-of: eshop-ddd-demo
+  app.kubernetes.io/managed-by: kustomize
+
+# Image customization
+images:
+  - name: eshop-api
+    newName: ghcr.io/your-org/eshop-api
+    newTag: latest
+
+# ConfigMap generator for non-sensitive config
+configMapGenerator:
+  - name: eshop-config
+    behavior: merge
+    literals:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Observability__OtlpEndpoint=http://jaeger-collector:4317
+
+# Resource patches for different environments
+# Override with: kubectl apply -k k8s/overlays/production
