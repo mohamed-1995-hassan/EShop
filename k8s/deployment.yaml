@@ -1,0 +1,176 @@
+# Kubernetes Deployment for EShop API
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eshop-api
+  labels:
+    app: eshop-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: eshop-api
+  template:
+    metadata:
+      labels:
+        app: eshop-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      
+      containers:
+        - name: eshop-api
+          image: eshop-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          
+          # Resource limits
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          
+          # Environment variables from secrets/configmaps
+          envFrom:
+            - configMapRef:
+                name: eshop-config
+            - secretRef:
+                name: eshop-secrets
+          
+          # Probes
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 0
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+          
+          # Graceful shutdown
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 10"]
+      
+      # Termination grace period
+      terminationGracePeriodSeconds: 60
+      
+      # Pod disruption budget friendly
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: eshop-api
+
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: eshop-api
+spec:
+  selector:
+    app: eshop-api
+  ports:
+    - port: 80
+      targetPort: 8080
+      name: http
+  type: ClusterIP
+
+---
+# ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eshop-config
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  Observability__OtlpEndpoint: "http://jaeger-collector:4317"
+  Logging__SeqUrl: "http://seq:5341"
+
+---
+# Secrets (use external secrets operator in production)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: eshop-secrets
+type: Opaque
+stringData:
+  ConnectionStrings__Database: "Host=postgres;Database=eshop;Username=postgres;Password=CHANGE_ME"
+  ConnectionStrings__Redis: "redis:6379,password=CHANGE_ME"
+  RabbitMQ__Host: "rabbitmq"
+  RabbitMQ__Username: "eshop"
+  RabbitMQ__Password: "CHANGE_ME"
+  Encryption__MasterKey: "YOUR-32-CHAR-KEY-FROM-KEY-VAULT!"
+  Encryption__Salt: "YOUR-UNIQUE-SALT-VALUE"
+
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: eshop-api-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: eshop-api
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: eshop-api-pdb
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: eshop-api

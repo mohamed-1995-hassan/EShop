@@ -6,13 +6,9 @@ namespace EShop.Infrastructure.Repositories;
 
 /// <summary>
 /// Repository implementation - in Infrastructure layer.
-/// Uses in-memory storage for demo purposes.
+/// Uses in-memory storage for demo/testing purposes.
 /// 
-/// In real applications, this would use:
-/// - Entity Framework Core
-/// - Dapper
-/// - MongoDB driver
-/// - etc.
+/// NOTE: For production, use OrderRepository with EF Core.
 /// </summary>
 public class InMemoryOrderRepository : IOrderRepository
 {
@@ -25,15 +21,22 @@ public class InMemoryOrderRepository : IOrderRepository
         return Task.FromResult(order);
     }
     
-    public Task<IEnumerable<Order>> GetByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<Order>> GetByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default)
     {
-        var orders = _orders.Values.Where(o => o.CustomerId == customerId);
-        return Task.FromResult(orders);
+        var orders = _orders.Values
+            .Where(o => o.CustomerId == customerId)
+            .OrderByDescending(o => o.OrderDate)
+            .ToList();
+        return Task.FromResult<IReadOnlyList<Order>>(orders);
     }
     
-    public Task<IEnumerable<Order>> GetAllAsync(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<Order>> GetByStatusAsync(OrderStatus status, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult<IEnumerable<Order>>(_orders.Values.ToList());
+        var orders = _orders.Values
+            .Where(o => o.Status == status)
+            .OrderBy(o => o.OrderDate)
+            .ToList();
+        return Task.FromResult<IReadOnlyList<Order>>(orders);
     }
     
     public Task AddAsync(Order order, CancellationToken cancellationToken = default)
@@ -42,15 +45,25 @@ public class InMemoryOrderRepository : IOrderRepository
         return Task.CompletedTask;
     }
     
-    public Task UpdateAsync(Order order, CancellationToken cancellationToken = default)
+    public void Update(Order order)
     {
         _orders[order.Id] = order;
-        return Task.CompletedTask;
     }
     
-    public Task DeleteAsync(Order order, CancellationToken cancellationToken = default)
+    public void Remove(Order order)
     {
         _orders.TryRemove(order.Id, out _);
-        return Task.CompletedTask;
+    }
+
+    public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        // In-memory: changes are immediate
+        return Task.FromResult(1);
+    }
+
+    public Task<int> SaveChangesWithOutboxAsync(CancellationToken cancellationToken = default)
+    {
+        // In-memory: no outbox needed
+        return Task.FromResult(1);
     }
 }

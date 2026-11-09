@@ -157,8 +157,8 @@ public class Order : AggregateRoot<Guid>
     /// </summary>
     public void Ship(string? trackingNumber = null, string? carrier = null)
     {
-        if (Status != OrderStatus.Placed)
-            throw new DomainException("Order must be placed before shipping");
+        if (Status != OrderStatus.Placed && Status != OrderStatus.Confirmed)
+            throw new DomainException("Order must be placed or confirmed before shipping");
         
         Status = OrderStatus.Shipped;
         
@@ -196,6 +196,20 @@ public class Order : AggregateRoot<Guid>
         
         Status = OrderStatus.Completed;
     }
+
+    /// <summary>
+    /// BEHAVIOR: Confirm the order after successful payment
+    /// Used by the Order Processing Saga after payment completion.
+    /// </summary>
+    public void Confirm()
+    {
+        if (Status != OrderStatus.Placed)
+            throw new DomainException("Order must be placed before confirmation");
+        
+        Status = OrderStatus.Confirmed;
+        
+        AddDomainEvent(new OrderConfirmedEvent(Id, CustomerId, TotalAmount.Amount));
+    }
     
     /// <summary>
     /// PRIVATE METHOD: Recalculate total - internal consistency
@@ -216,7 +230,8 @@ public enum OrderStatus
 {
     Pending = 0,    // Order created, items being added
     Placed = 1,     // Order confirmed by customer
-    Shipped = 2,    // Order shipped
-    Completed = 3,  // Delivery confirmed
-    Cancelled = 4   // Order cancelled
+    Confirmed = 2,  // Payment confirmed, ready for fulfillment
+    Shipped = 3,    // Order shipped
+    Completed = 4,  // Delivery confirmed
+    Cancelled = 5   // Order cancelled
 }

@@ -1,4 +1,5 @@
 using EShop.Application.DTOs;
+using EShop.Domain.Aggregates.OrderAggregate;
 
 namespace EShop.Application.Services;
 
@@ -9,7 +10,7 @@ public interface IOrderAppService
 {
     Task<OrderDto?> GetOrderAsync(Guid orderId, CancellationToken cancellationToken = default);
     Task<IEnumerable<OrderDto>> GetCustomerOrdersAsync(Guid customerId, CancellationToken cancellationToken = default);
-    Task<IEnumerable<OrderDto>> GetAllOrdersAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<OrderDto>> GetOrdersByStatusAsync(OrderStatus status, CancellationToken cancellationToken = default);
     Task<Guid> CreateOrderAsync(CreateOrderDto dto, CancellationToken cancellationToken = default);
     Task AddItemAsync(Guid orderId, AddOrderItemDto dto, CancellationToken cancellationToken = default);
     Task PlaceOrderAsync(Guid orderId, CancellationToken cancellationToken = default);

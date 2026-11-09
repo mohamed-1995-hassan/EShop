@@ -49,9 +49,9 @@ public class OrderAppService : IOrderAppService
         return orders.Select(MapToDto);
     }
     
-    public async Task<IEnumerable<OrderDto>> GetAllOrdersAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<OrderDto>> GetOrdersByStatusAsync(OrderStatus status, CancellationToken cancellationToken = default)
     {
-        var orders = await _orderRepository.GetAllAsync(cancellationToken);
+        var orders = await _orderRepository.GetByStatusAsync(status, cancellationToken);
         return orders.Select(MapToDto);
     }
     
@@ -70,6 +70,7 @@ public class OrderAppService : IOrderAppService
         
         // Persist
         await _orderRepository.AddAsync(order, cancellationToken);
+        await _orderRepository.SaveChangesAsync(cancellationToken);
         
         _logger.LogInformation("Order {OrderId} created successfully", order.Id);
         
@@ -93,11 +94,9 @@ public class OrderAppService : IOrderAppService
         // Call behavior on aggregate (business rules enforced here)
         order.AddItem(dto.ProductId, dto.ProductName, unitPrice, dto.Quantity);
         
-        // Persist changes
-        await _orderRepository.UpdateAsync(order, cancellationToken);
-        
-        // Dispatch domain events
-        await DispatchDomainEventsAsync(order, cancellationToken);
+        // Persist changes and dispatch events
+        _orderRepository.Update(order);
+        await _orderRepository.SaveChangesAsync(cancellationToken);
         
         _logger.LogInformation("Item added to Order {OrderId}", orderId);
     }
@@ -119,11 +118,9 @@ public class OrderAppService : IOrderAppService
         // 2. Execute business operation (domain logic, raises events)
         order.Place();
         
-        // 3. Persist changes
-        await _orderRepository.UpdateAsync(order, cancellationToken);
-        
-        // 4. Dispatch domain events (triggers handlers)
-        await DispatchDomainEventsAsync(order, cancellationToken);
+        // 3. Persist changes with outbox (events saved atomically)
+        _orderRepository.Update(order);
+        await _orderRepository.SaveChangesWithOutboxAsync(cancellationToken);
         
         _logger.LogInformation("═══════════════════════════════════════════════════");
         _logger.LogInformation("✅ ORDER {OrderId} PLACED SUCCESSFULLY", orderId);
@@ -142,8 +139,8 @@ public class OrderAppService : IOrderAppService
         
         order.Ship(trackingNumber, carrier);
         
-        await _orderRepository.UpdateAsync(order, cancellationToken);
-        await DispatchDomainEventsAsync(order, cancellationToken);
+        _orderRepository.Update(order);
+        await _orderRepository.SaveChangesWithOutboxAsync(cancellationToken);
         
         _logger.LogInformation("✅ Order {OrderId} shipped", orderId);
     }
@@ -160,38 +157,10 @@ public class OrderAppService : IOrderAppService
         
         order.Cancel(reason);
         
-        await _orderRepository.UpdateAsync(order, cancellationToken);
-        await DispatchDomainEventsAsync(order, cancellationToken);
+        _orderRepository.Update(order);
+        await _orderRepository.SaveChangesWithOutboxAsync(cancellationToken);
         
         _logger.LogInformation("✅ Order {OrderId} cancelled", orderId);
-    }
-    
-    /// <summary>
-    /// Dispatch all domain events raised by the aggregate.
-    /// Events are published AFTER successful save.
-    /// </summary>
-    private async Task DispatchDomainEventsAsync(Order order, CancellationToken cancellationToken)
-    {
-        var domainEvents = order.DomainEvents.ToList();
-        
-        if (!domainEvents.Any())
-            return;
-        
-        _logger.LogInformation("📢 Dispatching {Count} domain event(s)", domainEvents.Count);
-        
-        // Clear events from aggregate BEFORE publishing
-        // (prevents re-publishing on subsequent saves)
-        order.ClearDomainEvents();
-        
-        // Publish each event - MediatR finds all handlers
-        foreach (var domainEvent in domainEvents)
-        {
-            _logger.LogInformation(
-                "  → Publishing {EventType}",
-                domainEvent.GetType().Name);
-            
-            await _mediator.Publish(domainEvent, cancellationToken);
-        }
     }
     
     private static OrderDto MapToDto(Order order)
