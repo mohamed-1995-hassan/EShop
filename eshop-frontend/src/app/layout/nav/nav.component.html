@@ -1,0 +1,130 @@
+<!-- Admin Top Navigation Bar -->
+<header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+  <div class="flex items-center justify-between px-6 py-3">
+    <!-- Left side -->
+    <div class="flex items-center space-x-4">
+      <button 
+        (click)="toggleSidebar.emit()"
+        class="p-2 hover:bg-gray-100 rounded-lg lg:hidden"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      
+      <!-- Breadcrumb -->
+      <nav class="hidden sm:flex items-center space-x-2 text-sm">
+        <a routerLink="/admin" class="text-gray-500 hover:text-gray-700">Admin</a>
+        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        <span class="text-gray-900 font-medium">Dashboard</span>
+      </nav>
+    </div>
+
+    <!-- Right side -->
+    <div class="flex items-center space-x-4">
+      <!-- Search -->
+      <div class="relative hidden md:block">
+        <input
+          type="text"
+          placeholder="Search..."
+          class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 w-64"
+        />
+        <svg 
+          class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+
+      <!-- Notifications -->
+      <div class="relative">
+        <button 
+          (click)="toggleNotifications()"
+          class="relative p-2 hover:bg-gray-100 rounded-lg"
+        >
+          <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+          <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+        </button>
+
+        @if (showNotifications()) {
+          <div class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border py-2 z-50">
+            <div class="px-4 py-2 border-b flex items-center justify-between">
+              <h3 class="font-semibold text-gray-900">Notifications</h3>
+              <button class="text-sm text-primary-600 hover:text-primary-700">Mark all read</button>
+            </div>
+            
+            <div class="max-h-64 overflow-y-auto">
+              @for (notification of notifications; track notification.id) {
+                <a href="#" class="block px-4 py-3 hover:bg-gray-50 border-b last:border-b-0">
+                  <div class="flex items-start space-x-3">
+                    <div 
+                      class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                      [class.bg-blue-100]="notification.type === 'order'"
+                      [class.bg-green-100]="notification.type === 'success'"
+                      [class.bg-yellow-100]="notification.type === 'warning'"
+                    >
+                      <svg 
+                        class="w-4 h-4"
+                        [class.text-blue-600]="notification.type === 'order'"
+                        [class.text-green-600]="notification.type === 'success'"
+                        [class.text-yellow-600]="notification.type === 'warning'"
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        @if (notification.type === 'order') {
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                        } @else if (notification.type === 'success') {
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        } @else {
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        }
+                      </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm text-gray-900">{{ notification.message }}</p>
+                      <p class="text-xs text-gray-500 mt-1">{{ notification.time }}</p>
+                    </div>
+                  </div>
+                </a>
+              }
+            </div>
+            
+            <div class="px-4 py-2 border-t">
+              <a href="#" class="text-sm text-primary-600 hover:text-primary-700">View all notifications</a>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Quick Actions -->
+      <button 
+        class="p-2 hover:bg-gray-100 rounded-lg hidden sm:block"
+        title="Quick Actions"
+      >
+        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+      </button>
+
+      <!-- Store Link -->
+      <a 
+        routerLink="/"
+        class="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900"
+        target="_blank"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        </svg>
+        <span class="hidden md:inline">View Store</span>
+      </a>
+    </div>
+  </div>
+</header>

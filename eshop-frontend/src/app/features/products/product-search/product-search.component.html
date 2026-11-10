@@ -1,0 +1,117 @@
+<app-header />
+
+<main class="min-h-screen bg-gray-50 py-8">
+  <div class="container mx-auto px-4">
+    <!-- Search Header -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <form (ngSubmit)="search()" class="flex gap-4">
+        <div class="flex-1 relative">
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            name="query"
+            placeholder="Search products..."
+            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          />
+          <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+        <button
+          type="submit"
+          class="px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
+        >
+          Search
+        </button>
+      </form>
+      
+      @if (currentQuery()) {
+        <div class="mt-4">
+          <p class="text-gray-600">
+            Showing results for <span class="font-medium text-gray-900">"{{ currentQuery() }}"</span>
+            <span class="text-gray-500">({{ totalResults() }} results)</span>
+          </p>
+        </div>
+      }
+    </div>
+
+    <!-- Results -->
+    @if (loading()) {
+      <app-loading message="Searching..." />
+    } @else if (products().length === 0 && currentQuery()) {
+      <div class="bg-white rounded-lg shadow p-12 text-center">
+        <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <h3 class="mt-4 text-lg font-medium text-gray-900">No results found</h3>
+        <p class="mt-2 text-gray-500">
+          We couldn't find any products matching "{{ currentQuery() }}".
+        </p>
+        <div class="mt-6 space-y-2">
+          <p class="text-sm text-gray-600">Suggestions:</p>
+          <ul class="text-sm text-gray-500 list-disc list-inside">
+            <li>Check your spelling</li>
+            <li>Try more general terms</li>
+            <li>Try different keywords</li>
+          </ul>
+        </div>
+        <a routerLink="/products" class="mt-6 inline-block text-primary-600 hover:text-primary-700 font-medium">
+          Browse all products →
+        </a>
+      </div>
+    } @else if (!currentQuery()) {
+      <div class="bg-white rounded-lg shadow p-12 text-center">
+        <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <h3 class="mt-4 text-lg font-medium text-gray-900">Search for products</h3>
+        <p class="mt-2 text-gray-500">
+          Enter a search term to find products
+        </p>
+        <div class="mt-6">
+          <p class="text-sm text-gray-600 mb-3">Popular searches:</p>
+          <div class="flex flex-wrap justify-center gap-2">
+            @for (term of popularSearches; track term) {
+              <button
+                (click)="searchFor(term)"
+                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
+              >
+                {{ term }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        @for (product of products(); track product.id) {
+          <div class="group bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+            <a [routerLink]="['/products', product.id]" class="block">
+              <div class="relative aspect-square overflow-hidden rounded-t-lg bg-gray-100">
+                @if (product.mainImage) {
+                  <img 
+                    [src]="product.mainImage" 
+                    [alt]="product.name"
+                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                }
+              </div>
+            </a>
+            <div class="p-4">
+              <a [routerLink]="['/products', product.id]">
+                <h3 class="font-medium text-gray-900 mb-1 line-clamp-2 group-hover:text-primary-600 transition-colors">
+                  {{ product.name }}
+                </h3>
+              </a>
+              <div class="flex items-center justify-between mt-2">
+                <span class="text-lg font-bold text-primary-600">{{ product.price | currency }}</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</main>
+
+<app-footer />

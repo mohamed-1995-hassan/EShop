@@ -1,0 +1,139 @@
+<app-header />
+<main class="min-h-screen bg-gray-100 py-8">
+  <div class="container mx-auto px-4 max-w-7xl">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
+        <p class="text-gray-600 mt-1">Track your store performance and insights</p>
+      </div>
+      <select class="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+        <option>Last 7 days</option>
+        <option>Last 30 days</option>
+        <option>Last 90 days</option>
+        <option>This Year</option>
+      </select>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      @for (metric of metrics; track metric.label) {
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div [class]="metric.iconBg" class="w-12 h-12 rounded-lg flex items-center justify-center">
+              <svg [class]="metric.iconColor" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="metric.icon"></path>
+              </svg>
+            </div>
+            <span [class]="metric.changePositive ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'" 
+                  class="px-2 py-1 rounded-full text-xs font-medium">
+              {{ metric.changePositive ? '+' : '' }}{{ metric.change }}%
+            </span>
+          </div>
+          <p class="text-3xl font-bold text-gray-900">{{ metric.value }}</p>
+          <p class="text-sm text-gray-500 mt-1">{{ metric.label }}</p>
+        </div>
+      }
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Sales Chart Placeholder -->
+      <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-lg font-semibold text-gray-900">Revenue Overview</h2>
+          <div class="flex gap-2">
+            <button class="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg">Revenue</button>
+            <button class="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-lg hover:bg-gray-200">Orders</button>
+          </div>
+        </div>
+        <div class="h-72 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+          <div class="text-center">
+            <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            <p class="text-gray-500">Revenue chart visualization</p>
+            <p class="text-sm text-gray-400">Connect chart library to display data</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Products -->
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-6">Top Products</h2>
+        <div class="space-y-4">
+          @for (product of topProducts; track product.name; let i = $index) {
+            <div class="flex items-center gap-4">
+              <span class="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
+                {{ i + 1 }}
+              </span>
+              <div class="flex-1">
+                <p class="font-medium text-gray-900 truncate">{{ product.name }}</p>
+                <p class="text-sm text-gray-500">{{ product.sales }} sales</p>
+              </div>
+              <p class="font-semibold text-gray-900">${{ product.revenue.toLocaleString() }}</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+      <!-- Traffic Sources -->
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-6">Traffic Sources</h2>
+        <div class="space-y-4">
+          @for (source of trafficSources; track source.name) {
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-gray-700">{{ source.name }}</span>
+                <span class="text-gray-900 font-medium">{{ source.percentage }}%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div [class]="source.color" [style.width]="source.percentage + '%'" class="rounded-full h-2"></div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-6">Recent Activity</h2>
+        <div class="space-y-4">
+          @for (activity of recentActivity; track activity.time) {
+            <div class="flex items-start gap-4">
+              <div [class]="activity.iconBg" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg [class]="activity.iconColor" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="activity.icon"></path>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-gray-900">{{ activity.message }}</p>
+                <p class="text-sm text-gray-500">{{ activity.time }}</p>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Conversion Funnel -->
+    <div class="mt-8 bg-white rounded-xl shadow-sm p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-6">Conversion Funnel</h2>
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        @for (step of funnelSteps; track step.name; let i = $index) {
+          <div class="text-center">
+            <div [class]="step.bg" class="rounded-lg p-4 mb-3">
+              <p class="text-3xl font-bold" [class]="step.text">{{ step.value.toLocaleString() }}</p>
+            </div>
+            <p class="font-medium text-gray-900">{{ step.name }}</p>
+            @if (i < funnelSteps.length - 1) {
+              <p class="text-sm text-gray-500 mt-1">{{ step.conversionRate }}% →</p>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</main>
+<app-footer />

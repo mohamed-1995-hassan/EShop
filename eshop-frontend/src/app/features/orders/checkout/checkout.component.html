@@ -1,0 +1,138 @@
+<app-header />
+<main class="min-h-screen bg-gray-50 py-8">
+  <div class="container mx-auto px-4">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Checkout</h1>
+    
+    @if (cartService.isEmpty()) {
+      <div class="bg-white rounded-lg shadow p-6 text-center">
+        <p class="text-gray-500 mb-4">Your cart is empty</p>
+        <a routerLink="/products" class="text-primary-600 hover:text-primary-700">Continue Shopping</a>
+      </div>
+    } @else {
+      <div class="grid lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Shipping Address -->
+          <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Shipping Address</h2>
+            <form [formGroup]="addressForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+                <input 
+                  type="text" 
+                  formControlName="street"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="123 Main St"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                <input 
+                  type="text" 
+                  formControlName="city"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                <input 
+                  type="text" 
+                  formControlName="postalCode"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                <input 
+                  type="text" 
+                  formControlName="country"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+            </form>
+          </div>
+          
+          <!-- Payment Method -->
+          <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Payment Method</h2>
+            <div class="space-y-3">
+              <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50" [class.border-primary-500]="paymentMethod() === 'card'">
+                <input type="radio" name="payment" value="card" [checked]="paymentMethod() === 'card'" (change)="paymentMethod.set('card')" class="w-4 h-4 text-primary-600"/>
+                <span class="ml-3 font-medium">Credit/Debit Card</span>
+              </label>
+              <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50" [class.border-primary-500]="paymentMethod() === 'paypal'">
+                <input type="radio" name="payment" value="paypal" [checked]="paymentMethod() === 'paypal'" (change)="paymentMethod.set('paypal')" class="w-4 h-4 text-primary-600"/>
+                <span class="ml-3 font-medium">PayPal</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Order Summary -->
+        <div class="lg:col-span-1">
+          <div class="bg-white rounded-lg shadow p-6 sticky top-24">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Order Summary</h2>
+            
+            <div class="max-h-64 overflow-y-auto divide-y mb-4">
+              @for (item of cartService.items(); track item.id) {
+                <div class="py-3 flex gap-3">
+                  <div class="w-16 h-16 bg-gray-100 rounded flex-shrink-0">
+                    @if (item.productImage) {
+                      <img [src]="item.productImage" [alt]="item.productName" class="w-full h-full object-cover rounded"/>
+                    }
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate">{{ item.productName }}</p>
+                    <p class="text-sm text-gray-500">Qty: {{ item.quantity }}</p>
+                  </div>
+                  <p class="text-sm font-medium">{{ item.totalPrice | currency }}</p>
+                </div>
+              }
+            </div>
+            
+            <div class="space-y-2 pt-4 border-t text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Subtotal</span>
+                <span>{{ cartService.subtotal() | currency }}</span>
+              </div>
+              @if (cartService.discount() > 0) {
+                <div class="flex justify-between text-green-600">
+                  <span>Discount</span>
+                  <span>-{{ cartService.discount() | currency }}</span>
+                </div>
+              }
+              <div class="flex justify-between">
+                <span class="text-gray-600">Shipping</span>
+                <span>{{ cartService.shipping() > 0 ? (cartService.shipping() | currency) : 'Free' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Tax</span>
+                <span>{{ cartService.tax() | currency }}</span>
+              </div>
+              <div class="pt-2 border-t flex justify-between text-lg font-bold">
+                <span>Total</span>
+                <span class="text-primary-600">{{ cartService.total() | currency }}</span>
+              </div>
+            </div>
+            
+            <button
+              (click)="placeOrder()"
+              [disabled]="processing() || !addressForm.valid"
+              class="mt-6 w-full py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ processing() ? 'Processing...' : 'Place Order' }}
+            </button>
+            
+            @if (error()) {
+              <p class="mt-2 text-sm text-red-600 text-center">{{ error() }}</p>
+            }
+            
+            <p class="mt-4 text-xs text-gray-500 text-center">
+              By placing your order, you agree to our Terms of Service and Privacy Policy.
+            </p>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</main>
+<app-footer />

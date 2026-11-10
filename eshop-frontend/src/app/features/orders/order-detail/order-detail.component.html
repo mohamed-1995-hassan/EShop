@@ -1,0 +1,133 @@
+<app-header />
+<main class="min-h-screen bg-gray-50 py-8">
+  <div class="container mx-auto px-4">
+    <nav class="mb-6 text-sm">
+      <ol class="flex items-center space-x-2">
+        <li><a routerLink="/" class="text-gray-500 hover:text-primary-600">Home</a></li>
+        <li><span class="text-gray-400">/</span></li>
+        <li><a routerLink="/orders" class="text-gray-500 hover:text-primary-600">Orders</a></li>
+        <li><span class="text-gray-400">/</span></li>
+        <li class="text-gray-900 font-medium">Order Details</li>
+      </ol>
+    </nav>
+
+    @if (loading()) {
+      <app-loading message="Loading order details..." />
+    } @else if (order()) {
+      <div class="grid lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 space-y-6">
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h1 class="text-xl font-bold text-gray-900">Order #{{ order()!.orderNumber }}</h1>
+                <p class="text-sm text-gray-500 mt-1">Placed on {{ order()!.createdAt | date:'medium' }}</p>
+              </div>
+              <span 
+                class="self-start px-3 py-1 text-sm font-medium rounded-full"
+                [class.bg-yellow-100]="order()!.status === 'Pending'"
+                [class.text-yellow-800]="order()!.status === 'Pending'"
+                [class.bg-blue-100]="order()!.status === 'Processing'"
+                [class.text-blue-800]="order()!.status === 'Processing'"
+                [class.bg-purple-100]="order()!.status === 'Shipped'"
+                [class.text-purple-800]="order()!.status === 'Shipped'"
+                [class.bg-green-100]="order()!.status === 'Delivered'"
+                [class.text-green-800]="order()!.status === 'Delivered'"
+                [class.bg-red-100]="order()!.status === 'Cancelled'"
+                [class.text-red-800]="order()!.status === 'Cancelled'"
+              >
+                {{ order()!.status }}
+              </span>
+            </div>
+            @if (order()!.trackingNumber) {
+              <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+                <p class="text-sm text-blue-700">
+                  <strong>Tracking:</strong> {{ order()!.trackingNumber }}
+                  @if (order()!.carrierName) { ({{ order()!.carrierName }}) }
+                </p>
+              </div>
+            }
+          </div>
+          
+          <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Order Items</h2>
+            <div class="divide-y">
+              @for (item of order()!.items; track item.productId) {
+                <div class="py-4 flex gap-4">
+                  <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                  </div>
+                  <div class="flex-1">
+                    <h3 class="font-medium text-gray-900">{{ item.productName }}</h3>
+                    <p class="text-sm text-gray-500">Qty: {{ item.quantity }} × {{ item.unitPrice | currency }}</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-semibold text-gray-900">{{ item.totalPrice | currency }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+          
+          <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Shipping Address</h2>
+            <div class="text-gray-600">
+              <p>{{ order()!.shippingAddress.street }}</p>
+              <p>{{ order()!.shippingAddress.city }}, {{ order()!.shippingAddress.postalCode }}</p>
+              <p>{{ order()!.shippingAddress.country }}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="lg:col-span-1">
+          <div class="bg-white rounded-lg shadow p-6 sticky top-24">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Order Summary</h2>
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Subtotal</span>
+                <span class="font-medium">{{ order()!.subtotal | currency }}</span>
+              </div>
+              @if (order()!.discount > 0) {
+                <div class="flex justify-between text-green-600">
+                  <span>Discount</span>
+                  <span>-{{ order()!.discount | currency }}</span>
+                </div>
+              }
+              <div class="flex justify-between">
+                <span class="text-gray-600">Shipping</span>
+                <span class="font-medium">{{ order()!.shipping | currency }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Tax</span>
+                <span class="font-medium">{{ order()!.tax | currency }}</span>
+              </div>
+              <div class="pt-3 border-t flex justify-between text-lg font-bold">
+                <span>Total</span>
+                <span class="text-primary-600">{{ order()!.total | currency }}</span>
+              </div>
+            </div>
+            @if (order()!.status === 'Pending' || order()!.status === 'Processing') {
+              <button
+                (click)="cancelOrder()"
+                [disabled]="cancelling()"
+                class="mt-6 w-full py-2 px-4 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50"
+              >
+                {{ cancelling() ? 'Cancelling...' : 'Cancel Order' }}
+              </button>
+            }
+            <a routerLink="/orders" class="mt-4 block w-full py-2 px-4 text-center border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+              Back to Orders
+            </a>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="bg-white rounded-lg shadow p-6 text-center">
+        <p class="text-gray-500">Order not found.</p>
+        <a routerLink="/orders" class="mt-4 inline-block text-primary-600">← Back to Orders</a>
+      </div>
+    }
+  </div>
+</main>
+<app-footer />

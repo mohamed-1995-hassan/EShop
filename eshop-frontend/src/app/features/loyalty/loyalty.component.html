@@ -1,0 +1,226 @@
+<app-header />
+<main class="min-h-screen bg-gray-50 py-8">
+  <div class="container mx-auto px-4 max-w-6xl">
+    @if (loading()) {
+      <div class="bg-white rounded-xl shadow-sm p-12 text-center">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-purple-600 border-t-transparent"></div>
+        <p class="text-gray-500 mt-4">Loading loyalty account...</p>
+      </div>
+    }
+
+    @if (!loading() && account()) {
+      <!-- Points Card -->
+      <div [class]="getTierGradient(account()!.tier)" class="rounded-2xl shadow-xl p-8 text-white mb-8">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div>
+            <div class="flex items-center gap-3 mb-2">
+              <span class="text-white/80 text-sm uppercase tracking-wide">{{ account()!.tier }} Member</span>
+              <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                </svg>
+              </div>
+            </div>
+            <p class="text-5xl font-bold mb-2">{{ account()!.points.toLocaleString() }}</p>
+            <p class="text-white/80">Available Points</p>
+          </div>
+          
+          <div class="text-right">
+            <p class="text-white/80 text-sm mb-1">Lifetime Points</p>
+            <p class="text-2xl font-bold">{{ account()!.lifetimePoints.toLocaleString() }}</p>
+            <p class="text-white/80 text-sm mt-3 mb-1">Lifetime Value</p>
+            <p class="text-xl font-semibold">${{ account()!.lifetimeValue.toFixed(2) }}</p>
+          </div>
+        </div>
+        
+        <!-- Progress to Next Tier -->
+        @if (account()!.pointsToNextTier > 0) {
+          <div class="mt-6 pt-6 border-t border-white/20">
+            <div class="flex justify-between text-sm mb-2">
+              <span class="text-white/80">Progress to {{ getNextTier(account()!.tier) }}</span>
+              <span>{{ account()!.pointsToNextTier.toLocaleString() }} points to go</span>
+            </div>
+            <div class="w-full bg-white/20 rounded-full h-3">
+              <div 
+                [style.width]="getTierProgress(account()!) + '%'"
+                class="bg-white rounded-full h-3 transition-all"></div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <button 
+          (click)="showRedeemModal.set(true)"
+          class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-all text-left group">
+          <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-purple-200 transition-colors">
+            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-1">Redeem Points</h3>
+          <p class="text-sm text-gray-500">Convert points to discounts</p>
+        </button>
+        
+        <a routerLink="/products" class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-all text-left group">
+          <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-green-200 transition-colors">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-1">Earn Points</h3>
+          <p class="text-sm text-gray-500">Shop and earn 1pt per $1</p>
+        </a>
+        
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-1">Refer Friends</h3>
+          <p class="text-sm text-gray-500">Earn 500 points per referral</p>
+        </div>
+      </div>
+
+      <!-- Tier Benefits -->
+      <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+        <h2 class="text-xl font-bold text-gray-900 mb-6">Tier Benefits</h2>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+          @for (tier of tiers; track tier.name) {
+            <div 
+              [class]="account()!.tier === tier.name ? 'ring-2 ring-purple-500 bg-purple-50' : 'bg-gray-50'"
+              class="rounded-xl p-4 relative">
+              @if (account()!.tier === tier.name) {
+                <div class="absolute -top-2 -right-2 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                  <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                  </svg>
+                </div>
+              }
+              <div [class]="tier.color" class="w-10 h-10 rounded-full flex items-center justify-center mb-3">
+                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                </svg>
+              </div>
+              <h3 class="font-semibold text-gray-900 mb-2">{{ tier.name }}</h3>
+              <ul class="text-sm text-gray-600 space-y-1">
+                @for (benefit of tier.benefits; track benefit) {
+                  <li class="flex items-center gap-1">
+                    <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    {{ benefit }}
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Transaction History -->
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-xl font-bold text-gray-900">Points History</h2>
+        </div>
+        
+        @if (account()!.transactions.length === 0) {
+          <div class="p-12 text-center">
+            <p class="text-gray-500">No transactions yet. Start earning points!</p>
+          </div>
+        } @else {
+          <div class="divide-y divide-gray-200">
+            @for (tx of account()!.transactions.slice(0, 10); track tx.id) {
+              <div class="px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                  <div [class]="tx.points > 0 ? 'bg-green-100' : 'bg-red-100'" class="w-10 h-10 rounded-full flex items-center justify-center">
+                    <svg [class]="tx.points > 0 ? 'text-green-600' : 'text-red-600'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      @if (tx.points > 0) {
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                      } @else {
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                      }
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="font-medium text-gray-900">{{ tx.reason }}</p>
+                    <p class="text-sm text-gray-500">{{ tx.type }} • {{ formatDate(tx.createdAt) }}</p>
+                  </div>
+                </div>
+                <span [class]="tx.points > 0 ? 'text-green-600' : 'text-red-600'" class="font-bold">
+                  {{ tx.points > 0 ? '+' : '' }}{{ tx.points.toLocaleString() }} pts
+                </span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+</main>
+
+<!-- Redeem Modal -->
+@if (showRedeemModal()) {
+  <div class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="showRedeemModal.set(false)"></div>
+      
+      <div class="relative bg-white rounded-xl shadow-xl max-w-md w-full mx-auto z-10">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">Redeem Points</h3>
+            <button (click)="showRedeemModal.set(false)" class="text-gray-400 hover:text-gray-500">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="p-6">
+          <div class="bg-purple-50 rounded-lg p-4 mb-6">
+            <p class="text-sm text-purple-600">Available Points</p>
+            <p class="text-3xl font-bold text-purple-900">{{ account()?.points.toLocaleString() }}</p>
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Points to Redeem</label>
+            <input 
+              type="number" 
+              [(ngModel)]="redeemAmount"
+              [max]="account()?.points"
+              min="100"
+              step="100"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+            <p class="text-sm text-gray-500 mt-1">Min: 100 points</p>
+          </div>
+          
+          <div class="bg-gray-50 rounded-lg p-4 mb-6">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Discount Value</span>
+              <span class="font-bold text-gray-900">${{ (redeemAmount / 100).toFixed(2) }}</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">100 points = $1.00</p>
+          </div>
+          
+          <div class="flex gap-3">
+            <button 
+              (click)="showRedeemModal.set(false)"
+              class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+              Cancel
+            </button>
+            <button 
+              (click)="redeemPoints()"
+              [disabled]="redeemAmount < 100 || redeemAmount > (account()?.points || 0)"
+              class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:bg-purple-400">
+              Redeem
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+<app-footer />

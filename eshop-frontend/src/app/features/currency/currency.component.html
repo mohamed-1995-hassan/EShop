@@ -1,0 +1,456 @@
+<div class="flex min-h-screen bg-gray-100">
+  <app-sidebar [isOpen]="sidebarOpen()" />
+  
+  <div class="flex-1 flex flex-col">
+    <app-nav />
+    
+    <main class="flex-1 p-6 overflow-auto">
+      <!-- Page Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Currency Management</h1>
+          <p class="text-gray-600">Configure currencies and exchange rates for your store</p>
+        </div>
+        <button 
+          (click)="showCreateModal.set(true)"
+          class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center"
+        >
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          Add Currency
+        </button>
+      </div>
+
+      @if (loading()) {
+        <app-loading message="Loading currencies..." />
+      } @else {
+        <!-- Primary Currency Card -->
+        @if (primaryCurrency()) {
+          <div class="bg-gradient-to-r from-primary-600 to-primary-800 rounded-xl shadow-lg p-6 mb-8 text-white">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="flex items-center space-x-2 mb-2">
+                  <span class="text-3xl">{{ getCurrencyFlag(primaryCurrency()!.code) }}</span>
+                  <span class="px-2 py-1 bg-white/20 rounded text-sm font-medium">Primary</span>
+                </div>
+                <h2 class="text-2xl font-bold">{{ primaryCurrency()!.name }}</h2>
+                <p class="text-primary-100">{{ primaryCurrency()!.code }} - {{ primaryCurrency()!.symbol }}</p>
+              </div>
+              <div class="text-right">
+                <p class="text-sm text-primary-100">Exchange rates configured</p>
+                <p class="text-3xl font-bold">{{ primaryCurrency()!.exchangeRates.length }}</p>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Currency Converter Tool -->
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Currency Converter</h3>
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+              <input
+                type="number"
+                [(ngModel)]="convertAmount"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                placeholder="100"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">From</label>
+              <select
+                [(ngModel)]="convertFrom"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                @for (currency of currencies(); track currency.id) {
+                  <option [value]="currency.code">{{ currency.code }} - {{ currency.name }}</option>
+                }
+              </select>
+            </div>
+            <div class="flex justify-center">
+              <button 
+                (click)="swapCurrencies()"
+                class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                </svg>
+              </button>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">To</label>
+              <select
+                [(ngModel)]="convertTo"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                @for (currency of currencies(); track currency.id) {
+                  <option [value]="currency.code">{{ currency.code }} - {{ currency.name }}</option>
+                }
+              </select>
+            </div>
+            <button 
+              (click)="convertCurrency()"
+              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+            >
+              Convert
+            </button>
+          </div>
+          
+          @if (conversionResult()) {
+            <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+              <div class="flex items-center justify-between">
+                <div>
+                  <span class="text-2xl font-bold text-gray-900">
+                    {{ conversionResult()!.originalAmount | number:'1.2-2' }} {{ conversionResult()!.fromCurrency }}
+                  </span>
+                  <span class="mx-4 text-gray-400">=</span>
+                  <span class="text-2xl font-bold text-primary-600">
+                    {{ conversionResult()!.convertedAmount | number:'1.2-2' }} {{ conversionResult()!.toCurrency }}
+                  </span>
+                </div>
+                <div class="text-right text-sm text-gray-500">
+                  Rate: 1 {{ conversionResult()!.fromCurrency }} = {{ conversionResult()!.rate | number:'1.4-4' }} {{ conversionResult()!.toCurrency }}
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Currencies Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          @for (currency of currencies(); track currency.id) {
+            <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+              <div class="p-6">
+                <div class="flex items-start justify-between mb-4">
+                  <div class="flex items-center space-x-3">
+                    <span class="text-3xl">{{ getCurrencyFlag(currency.code) }}</span>
+                    <div>
+                      <h3 class="font-semibold text-gray-900">{{ currency.name }}</h3>
+                      <p class="text-sm text-gray-500">{{ currency.code }}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    @if (currency.isPrimary) {
+                      <span class="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full font-medium">
+                        Primary
+                      </span>
+                    }
+                    <span 
+                      class="px-2 py-1 text-xs rounded-full font-medium"
+                      [class.bg-green-100]="currency.isActive"
+                      [class.text-green-800]="currency.isActive"
+                      [class.bg-gray-100]="!currency.isActive"
+                      [class.text-gray-800]="!currency.isActive"
+                    >
+                      {{ currency.isActive ? 'Active' : 'Inactive' }}
+                    </span>
+                  </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                  <div class="bg-gray-50 rounded-lg p-3">
+                    <p class="text-xs text-gray-500">Symbol</p>
+                    <p class="text-lg font-semibold">{{ currency.symbol }}</p>
+                  </div>
+                  <div class="bg-gray-50 rounded-lg p-3">
+                    <p class="text-xs text-gray-500">Decimals</p>
+                    <p class="text-lg font-semibold">{{ currency.decimalPlaces }}</p>
+                  </div>
+                </div>
+                
+                <div class="text-sm text-gray-600 mb-4">
+                  <p>Format: {{ getFormatExample(currency) }}</p>
+                  <p>Rounding: {{ currency.roundingRule }}</p>
+                </div>
+                
+                <!-- Exchange Rates Preview -->
+                @if (currency.exchangeRates.length > 0) {
+                  <div class="border-t pt-4">
+                    <p class="text-xs text-gray-500 mb-2">Exchange Rates</p>
+                    <div class="space-y-1">
+                      @for (rate of currency.exchangeRates.slice(0, 3); track rate.targetCurrencyCode) {
+                        <div class="flex items-center justify-between text-sm">
+                          <span class="text-gray-600">1 {{ currency.code }} →</span>
+                          <span class="font-medium">{{ rate.rate | number:'1.4-4' }} {{ rate.targetCurrencyCode }}</span>
+                        </div>
+                      }
+                      @if (currency.exchangeRates.length > 3) {
+                        <p class="text-xs text-gray-400">+{{ currency.exchangeRates.length - 3 }} more rates</p>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+              
+              <div class="px-6 py-3 bg-gray-50 border-t flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <button 
+                    (click)="editCurrency(currency)"
+                    class="p-2 text-gray-400 hover:text-primary-600 hover:bg-white rounded-lg"
+                    title="Edit"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                  </button>
+                  <button 
+                    (click)="manageRates(currency)"
+                    class="p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg"
+                    title="Manage Rates"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </button>
+                  @if (!currency.isPrimary) {
+                    <button 
+                      (click)="deleteCurrency(currency)"
+                      class="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-lg"
+                      title="Delete"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                    </button>
+                  }
+                </div>
+                
+                @if (!currency.isPrimary) {
+                  <button 
+                    (click)="setPrimary(currency)"
+                    class="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                  >
+                    Set as Primary
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Empty State -->
+        @if (currencies().length === 0) {
+          <div class="bg-white rounded-lg shadow p-12 text-center">
+            <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <h2 class="mt-4 text-lg font-medium text-gray-900">No currencies configured</h2>
+            <p class="mt-2 text-gray-500">Add your first currency to start accepting international payments</p>
+            <button 
+              (click)="showCreateModal.set(true)"
+              class="mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+            >
+              Add Currency
+            </button>
+          </div>
+        }
+      }
+    </main>
+  </div>
+</div>
+
+<!-- Create/Edit Currency Modal -->
+@if (showCreateModal()) {
+  <div class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="closeModal()"></div>
+      
+      <div class="relative bg-white rounded-lg max-w-lg w-full mx-auto shadow-xl">
+        <div class="p-6 border-b flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900">
+            {{ editingCurrency() ? 'Edit Currency' : 'Add New Currency' }}
+          </h3>
+          <button (click)="closeModal()" class="text-gray-400 hover:text-gray-500">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        
+        <form [formGroup]="currencyForm" (ngSubmit)="saveCurrency()" class="p-6 space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Currency Code</label>
+              <input 
+                type="text" 
+                formControlName="code"
+                placeholder="USD"
+                maxlength="3"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 uppercase"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Symbol</label>
+              <input 
+                type="text" 
+                formControlName="symbol"
+                placeholder="$"
+                maxlength="5"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Currency Name</label>
+            <input 
+              type="text" 
+              formControlName="name"
+              placeholder="US Dollar"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Decimal Places</label>
+              <select
+                formControlName="decimalPlaces"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option [value]="0">0</option>
+                <option [value]="2">2</option>
+                <option [value]="3">3</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Symbol Position</label>
+              <select
+                formControlName="symbolFirst"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option [value]="true">Before amount ($100)</option>
+                <option [value]="false">After amount (100$)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Native Symbol (Optional)</label>
+            <input 
+              type="text" 
+              formControlName="nativeSymbol"
+              placeholder="US$"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+
+          <div class="flex justify-end space-x-3 pt-4 border-t">
+            <button 
+              type="button"
+              (click)="closeModal()"
+              class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit"
+              [disabled]="saving()"
+              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+            >
+              {{ saving() ? 'Saving...' : 'Save Currency' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Manage Exchange Rates Modal -->
+@if (showRatesModal() && selectedCurrency()) {
+  <div class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="showRatesModal.set(false)"></div>
+      
+      <div class="relative bg-white rounded-lg max-w-2xl w-full mx-auto shadow-xl max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b flex items-center justify-between sticky top-0 bg-white">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">
+              Exchange Rates - {{ selectedCurrency()!.code }}
+            </h3>
+            <p class="text-sm text-gray-500">Manage exchange rates from {{ selectedCurrency()!.name }}</p>
+          </div>
+          <button (click)="showRatesModal.set(false)" class="text-gray-400 hover:text-gray-500">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="p-6">
+          <!-- Add New Rate -->
+          <div class="bg-gray-50 rounded-lg p-4 mb-6">
+            <h4 class="font-medium text-gray-900 mb-3">Add Exchange Rate</h4>
+            <div class="grid grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Target Currency</label>
+                <select
+                  [(ngModel)]="newRateTarget"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                >
+                  @for (currency of getOtherCurrencies(); track currency.code) {
+                    <option [value]="currency.code">{{ currency.code }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Rate</label>
+                <input
+                  type="number"
+                  [(ngModel)]="newRateValue"
+                  step="0.0001"
+                  placeholder="1.2345"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              <div class="flex items-end">
+                <button 
+                  (click)="addExchangeRate()"
+                  class="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                >
+                  Add Rate
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Existing Rates -->
+          <div class="space-y-3">
+            @for (rate of selectedCurrency()!.exchangeRates; track rate.targetCurrencyCode) {
+              <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div class="flex items-center space-x-4">
+                  <span class="text-xl">{{ getCurrencyFlag(rate.targetCurrencyCode) }}</span>
+                  <div>
+                    <p class="font-medium text-gray-900">
+                      1 {{ selectedCurrency()!.code }} = {{ rate.rate | number:'1.4-4' }} {{ rate.targetCurrencyCode }}
+                    </p>
+                    <p class="text-sm text-gray-500">
+                      Source: {{ rate.source }} • Updated: {{ rate.updatedAt | date:'short' }}
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <button class="p-2 text-gray-400 hover:text-primary-600 hover:bg-white rounded-lg">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                  </button>
+                  <button class="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-lg">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            } @empty {
+              <p class="text-center text-gray-500 py-4">No exchange rates configured</p>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}

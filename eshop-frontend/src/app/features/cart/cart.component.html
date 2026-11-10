@@ -1,0 +1,218 @@
+<app-header />
+
+<main class="min-h-screen bg-gray-50 py-8">
+  <div class="container mx-auto px-4">
+    <h1 class="text-2xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
+
+    @if (cartService.isEmpty()) {
+      <!-- Empty Cart -->
+      <div class="bg-white rounded-lg shadow p-12 text-center">
+        <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+        <h2 class="mt-4 text-lg font-medium text-gray-900">Your cart is empty</h2>
+        <p class="mt-2 text-gray-500">Looks like you haven't added any items yet.</p>
+        <a 
+          routerLink="/products" 
+          class="mt-6 inline-block px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
+        >
+          Start Shopping
+        </a>
+      </div>
+    } @else {
+      <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Cart Items -->
+        <div class="lg:col-span-2 space-y-4">
+          @for (item of cartService.items(); track item.id) {
+            <div class="bg-white rounded-lg shadow p-4">
+              <div class="flex gap-4">
+                <!-- Product Image -->
+                <a [routerLink]="['/products', item.productId]" class="flex-shrink-0">
+                  <div class="w-24 h-24 rounded-lg overflow-hidden bg-gray-100">
+                    @if (item.productImage) {
+                      <img [src]="item.productImage" [alt]="item.productName" class="w-full h-full object-cover">
+                    } @else {
+                      <div class="w-full h-full flex items-center justify-center">
+                        <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                      </div>
+                    }
+                  </div>
+                </a>
+
+                <!-- Product Info -->
+                <div class="flex-1">
+                  <div class="flex justify-between">
+                    <div>
+                      <a 
+                        [routerLink]="['/products', item.productId]"
+                        class="font-medium text-gray-900 hover:text-primary-600"
+                      >
+                        {{ item.productName }}
+                      </a>
+                      @if (item.variantName) {
+                        <p class="text-sm text-gray-500">{{ item.variantName }}</p>
+                      }
+                      <p class="text-sm text-gray-500">SKU: {{ item.sku }}</p>
+                    </div>
+                    <button 
+                      (click)="removeItem(item.id)"
+                      class="text-gray-400 hover:text-red-600 transition-colors"
+                    >
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div class="mt-4 flex items-center justify-between">
+                    <!-- Quantity -->
+                    <div class="flex items-center border rounded-lg">
+                      <button 
+                        (click)="updateQuantity(item.id, item.quantity - 1)"
+                        [disabled]="item.quantity <= 1"
+                        class="px-3 py-1.5 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        -
+                      </button>
+                      <span class="px-4 py-1.5 border-x">{{ item.quantity }}</span>
+                      <button 
+                        (click)="updateQuantity(item.id, item.quantity + 1)"
+                        class="px-3 py-1.5 text-gray-600 hover:bg-gray-100"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <!-- Price -->
+                    <div class="text-right">
+                      <p class="text-lg font-bold text-primary-600">{{ item.totalPrice | currency }}</p>
+                      @if (item.quantity > 1) {
+                        <p class="text-sm text-gray-500">{{ item.unitPrice | currency }} each</p>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Continue Shopping -->
+          <div class="flex justify-between items-center pt-4">
+            <a routerLink="/products" class="text-primary-600 hover:text-primary-700 flex items-center">
+              <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+              </svg>
+              Continue Shopping
+            </a>
+            <button 
+              (click)="clearCart()"
+              class="text-red-600 hover:text-red-700"
+            >
+              Clear Cart
+            </button>
+          </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="lg:col-span-1">
+          <div class="bg-white rounded-lg shadow p-6 sticky top-24">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Order Summary</h2>
+
+            <!-- Coupon Code -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Coupon Code
+              </label>
+              <div class="flex gap-2">
+                <input
+                  type="text"
+                  [(ngModel)]="couponCode"
+                  placeholder="Enter code"
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                />
+                <button
+                  (click)="applyCoupon()"
+                  [disabled]="!couponCode"
+                  class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Apply
+                </button>
+              </div>
+              @if (couponError()) {
+                <p class="mt-1 text-sm text-red-600">{{ couponError() }}</p>
+              }
+              @if (cartService.currentCart()?.couponCode) {
+                <div class="mt-2 flex items-center justify-between bg-green-50 p-2 rounded">
+                  <span class="text-sm text-green-700">
+                    Coupon "{{ cartService.currentCart()?.couponCode }}" applied
+                  </span>
+                  <button (click)="removeCoupon()" class="text-green-700 hover:text-green-900">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </div>
+              }
+            </div>
+
+            <!-- Summary Lines -->
+            <div class="space-y-3 pb-4 border-b">
+              <div class="flex justify-between text-gray-600">
+                <span>Subtotal ({{ cartService.itemCount() }} items)</span>
+                <span>{{ cartService.subtotal() | currency }}</span>
+              </div>
+              @if (cartService.discount() > 0) {
+                <div class="flex justify-between text-green-600">
+                  <span>Discount</span>
+                  <span>-{{ cartService.discount() | currency }}</span>
+                </div>
+              }
+              <div class="flex justify-between text-gray-600">
+                <span>Shipping</span>
+                <span>{{ cartService.shipping() > 0 ? (cartService.shipping() | currency) : 'Free' }}</span>
+              </div>
+              <div class="flex justify-between text-gray-600">
+                <span>Tax</span>
+                <span>{{ cartService.tax() | currency }}</span>
+              </div>
+            </div>
+
+            <!-- Total -->
+            <div class="flex justify-between py-4 text-lg font-bold text-gray-900">
+              <span>Total</span>
+              <span>{{ cartService.total() | currency }}</span>
+            </div>
+
+            <!-- Checkout Button -->
+            <button
+              (click)="checkout()"
+              class="w-full py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
+            >
+              Proceed to Checkout
+            </button>
+
+            <!-- Security Info -->
+            <div class="mt-4 flex items-center justify-center text-sm text-gray-500">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+              Secure Checkout
+            </div>
+
+            <!-- Payment Methods -->
+            <div class="mt-4 flex justify-center space-x-2">
+              <div class="w-10 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-gray-600">VISA</div>
+              <div class="w-10 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-gray-600">MC</div>
+              <div class="w-10 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-gray-600">AMEX</div>
+              <div class="w-10 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-gray-600">PP</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</main>
+
+<app-footer />

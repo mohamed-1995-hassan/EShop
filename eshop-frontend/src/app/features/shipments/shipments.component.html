@@ -1,0 +1,182 @@
+<app-header />
+<main class="min-h-screen bg-gray-50 py-8">
+  <div class="container mx-auto px-4 max-w-6xl">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Track Shipments</h1>
+      <p class="text-gray-600 mt-1">Monitor all your package deliveries in one place</p>
+    </div>
+
+    <!-- Track Package Card -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Track a Package</h2>
+      <div class="flex gap-4">
+        <input 
+          type="text" 
+          [(ngModel)]="trackingNumber"
+          placeholder="Enter tracking number"
+          class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono">
+        <button 
+          (click)="trackPackage()"
+          [disabled]="!trackingNumber"
+          class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 font-medium">
+          Track
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    @if (loading()) {
+      <div class="bg-white rounded-xl shadow-sm p-12 text-center">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
+        <p class="text-gray-500 mt-4">Loading shipments...</p>
+      </div>
+    }
+
+    <!-- Empty State -->
+    @if (!loading() && shipments().length === 0) {
+      <div class="bg-white rounded-xl shadow-sm p-12 text-center">
+        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">No Shipments</h3>
+        <p class="text-gray-500 mb-6">You don't have any active shipments.</p>
+        <a routerLink="/orders" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+          View Orders
+        </a>
+      </div>
+    }
+
+    <!-- Shipments List -->
+    @if (!loading() && shipments().length > 0) {
+      <div class="space-y-4">
+        @for (shipment of shipments(); track shipment.id) {
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <!-- Shipment Header -->
+            <div class="p-6 border-b border-gray-100">
+              <div class="flex flex-col sm:flex-row justify-between gap-4">
+                <div>
+                  <div class="flex items-center gap-3 mb-2">
+                    <span [class]="getStatusClass(shipment.status)" class="px-3 py-1 rounded-full text-xs font-medium">
+                      {{ formatStatus(shipment.status) }}
+                    </span>
+                    <span class="text-gray-500 text-sm">{{ shipment.carrier }}</span>
+                  </div>
+                  <p class="font-mono text-gray-900">{{ shipment.trackingNumber }}</p>
+                  <p class="text-sm text-gray-500">Order #{{ shipment.orderNumber }}</p>
+                </div>
+                <div class="text-right">
+                  @if (shipment.estimatedDelivery) {
+                    <p class="text-sm text-gray-500">Estimated Delivery</p>
+                    <p class="font-semibold text-gray-900">{{ formatDate(shipment.estimatedDelivery) }}</p>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Progress Tracker -->
+            <div class="px-6 py-4 bg-gray-50">
+              <div class="flex items-center justify-between max-w-2xl mx-auto">
+                @for (step of trackingSteps; track step.status; let i = $index) {
+                  <div class="flex flex-col items-center">
+                    <div [class]="getStepClass(shipment.status, step.status)" 
+                         class="w-10 h-10 rounded-full flex items-center justify-center">
+                      @if (isStepCompleted(shipment.status, step.status)) {
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                      } @else {
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          @switch (step.status) {
+                            @case ('Pending') {
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            }
+                            @case ('Processing') {
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                            }
+                            @case ('Shipped') {
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+                            }
+                            @case ('InTransit') {
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path>
+                            }
+                            @default {
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                            }
+                          }
+                        </svg>
+                      }
+                    </div>
+                    <span class="text-xs text-gray-500 mt-2 hidden sm:block">{{ step.label }}</span>
+                  </div>
+                  @if (i < trackingSteps.length - 1) {
+                    <div [class]="isStepCompleted(shipment.status, trackingSteps[i + 1].status) ? 'bg-green-500' : 'bg-gray-300'"
+                         class="flex-1 h-1 mx-2"></div>
+                  }
+                }
+              </div>
+            </div>
+
+            <!-- Shipment Details -->
+            <div class="p-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Shipping Address -->
+                <div>
+                  <h4 class="font-medium text-gray-900 mb-2">Shipping To</h4>
+                  <div class="text-sm text-gray-600">
+                    <p>{{ shipment.address.street }}</p>
+                    <p>{{ shipment.address.city }}, {{ shipment.address.state }} {{ shipment.address.postalCode }}</p>
+                    <p>{{ shipment.address.country }}</p>
+                  </div>
+                </div>
+                
+                <!-- Package Info -->
+                <div>
+                  <h4 class="font-medium text-gray-900 mb-2">Package Details</h4>
+                  <div class="text-sm text-gray-600">
+                    <p>{{ shipment.items.length }} item(s)</p>
+                    <p>Weight: {{ shipment.weight }} lbs</p>
+                    @if (shipment.serviceType) {
+                      <p>Service: {{ shipment.serviceType }}</p>
+                    }
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Tracking Events -->
+              @if (shipment.events && shipment.events.length > 0) {
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                  <button 
+                    (click)="toggleEvents(shipment.id)"
+                    class="flex items-center gap-2 text-blue-600 hover:text-blue-700">
+                    <span>{{ expandedShipments.has(shipment.id) ? 'Hide' : 'Show' }} tracking history</span>
+                    <svg [class]="expandedShipments.has(shipment.id) ? 'rotate-180' : ''" class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </button>
+                  
+                  @if (expandedShipments.has(shipment.id)) {
+                    <div class="mt-4 space-y-4">
+                      @for (event of shipment.events; track event.timestamp) {
+                        <div class="flex gap-4">
+                          <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                          <div>
+                            <p class="font-medium text-gray-900">{{ event.description }}</p>
+                            <p class="text-sm text-gray-500">{{ event.location }} • {{ formatDateTime(event.timestamp) }}</p>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</main>
+<app-footer />

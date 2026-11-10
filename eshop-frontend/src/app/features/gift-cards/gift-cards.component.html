@@ -1,0 +1,300 @@
+<app-header />
+<main class="min-h-screen bg-gray-50 py-8">
+  <div class="container mx-auto px-4 max-w-6xl">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Gift Cards</h1>
+        <p class="text-gray-600 mt-1">Manage your gift cards and check balances</p>
+      </div>
+      <button 
+        (click)="showPurchaseModal.set(true)"
+        class="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-pink-600 hover:to-purple-700 transition-all flex items-center gap-2 shadow-lg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path>
+        </svg>
+        Buy Gift Card
+      </button>
+    </div>
+
+    <!-- Check Balance Card -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Check Gift Card Balance</h2>
+      <div class="flex gap-4">
+        <input 
+          type="text" 
+          [(ngModel)]="checkCode"
+          placeholder="Enter gift card code"
+          class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono">
+        <button 
+          (click)="checkBalance()"
+          [disabled]="!checkCode || checkingBalance()"
+          class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:bg-purple-400">
+          {{ checkingBalance() ? 'Checking...' : 'Check Balance' }}
+        </button>
+      </div>
+      
+      @if (balanceResult()) {
+        <div class="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-purple-600 font-medium">Card: {{ balanceResult()!.code }}</p>
+              <p class="text-sm text-purple-600">Status: {{ balanceResult()!.status }}</p>
+              @if (balanceResult()!.expiresAt) {
+                <p class="text-sm text-purple-600">Expires: {{ formatDate(balanceResult()!.expiresAt!) }}</p>
+              }
+            </div>
+            <div class="text-right">
+              <p class="text-sm text-purple-600">Available Balance</p>
+              <p class="text-3xl font-bold text-purple-900">{{ balanceResult()!.currency }} {{ balanceResult()!.balance.toFixed(2) }}</p>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Gift Cards Grid -->
+    <h2 class="text-xl font-bold text-gray-900 mb-4">My Gift Cards</h2>
+    
+    @if (loading()) {
+      <div class="bg-white rounded-xl shadow-sm p-12 text-center">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-purple-600 border-t-transparent"></div>
+        <p class="text-gray-500 mt-4">Loading gift cards...</p>
+      </div>
+    }
+
+    @if (!loading() && giftCards().length === 0) {
+      <div class="bg-white rounded-xl shadow-sm p-12 text-center">
+        <div class="w-20 h-20 bg-gradient-to-r from-pink-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-10 h-10 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">No Gift Cards</h3>
+        <p class="text-gray-500 mb-6">You don't have any gift cards yet. Purchase one or redeem a code!</p>
+        <button 
+          (click)="showPurchaseModal.set(true)"
+          class="inline-block bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-pink-600 hover:to-purple-700 transition-all">
+          Buy a Gift Card
+        </button>
+      </div>
+    }
+
+    @if (!loading() && giftCards().length > 0) {
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        @for (card of giftCards(); track card.id) {
+          <div class="bg-gradient-to-br from-purple-600 to-pink-500 rounded-xl shadow-lg overflow-hidden text-white">
+            <div class="p-6">
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-sm opacity-80">{{ card.type }} Gift Card</span>
+                <span [class]="card.status === 'Active' ? 'bg-green-400' : 'bg-gray-400'" 
+                      class="px-2 py-0.5 rounded-full text-xs text-white">
+                  {{ card.status }}
+                </span>
+              </div>
+              
+              <div class="mb-6">
+                <p class="text-sm opacity-80">Current Balance</p>
+                <p class="text-4xl font-bold">{{ card.currency }} {{ card.currentBalance.toFixed(2) }}</p>
+                <p class="text-sm opacity-70 mt-1">of {{ card.currency }} {{ card.initialBalance.toFixed(2) }}</p>
+              </div>
+              
+              <div class="bg-white/20 rounded-lg p-3 mb-4">
+                <p class="text-xs opacity-80 mb-1">Card Code</p>
+                <p class="font-mono text-lg tracking-wider">{{ card.code }}</p>
+              </div>
+              
+              @if (card.recipientName) {
+                <div class="border-t border-white/20 pt-4">
+                  <p class="text-sm">
+                    <span class="opacity-80">For:</span> {{ card.recipientName }}
+                  </p>
+                  @if (card.personalMessage) {
+                    <p class="text-sm opacity-80 italic mt-1">"{{ card.personalMessage }}"</p>
+                  }
+                </div>
+              }
+              
+              @if (card.expiresAt) {
+                <p class="text-xs opacity-70 mt-4">
+                  Expires: {{ formatDate(card.expiresAt) }}
+                </p>
+              }
+            </div>
+            
+            <!-- Transaction History Button -->
+            <button 
+              (click)="viewTransactions(card)"
+              class="w-full bg-white/10 hover:bg-white/20 transition-colors py-3 text-sm font-medium">
+              View Transactions
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Redeem Section -->
+    <div class="mt-8 bg-white rounded-xl shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Redeem a Gift Card</h3>
+      <p class="text-gray-600 mb-4">Have a gift card code? Redeem it to add to your account.</p>
+      <div class="flex gap-4">
+        <input 
+          type="text" 
+          [(ngModel)]="redeemCode"
+          placeholder="Enter gift card code"
+          class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono">
+        <button 
+          (click)="redeemGiftCard()"
+          [disabled]="!redeemCode"
+          class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-400">
+          Redeem
+        </button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Purchase Modal -->
+@if (showPurchaseModal()) {
+  <div class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="showPurchaseModal.set(false)"></div>
+      
+      <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full mx-auto z-10">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">Purchase Gift Card</h3>
+            <button (click)="showPurchaseModal.set(false)" class="text-gray-400 hover:text-gray-500">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="p-6 space-y-4">
+          <!-- Amount Selection -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Select Amount</label>
+            <div class="grid grid-cols-4 gap-2">
+              @for (amount of [25, 50, 100, 200]; track amount) {
+                <button 
+                  (click)="purchaseForm.amount = amount"
+                  [class]="purchaseForm.amount === amount ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-300 hover:border-purple-300'"
+                  class="py-3 border-2 rounded-lg font-medium transition-colors">
+                  ${{ amount }}
+                </button>
+              }
+            </div>
+            <div class="mt-2">
+              <input 
+                type="number" 
+                [(ngModel)]="purchaseForm.amount"
+                min="10"
+                max="500"
+                placeholder="Custom amount"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Recipient Email</label>
+            <input 
+              type="email" 
+              [(ngModel)]="purchaseForm.recipientEmail"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              placeholder="recipient@example.com">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Recipient Name</label>
+            <input 
+              type="text" 
+              [(ngModel)]="purchaseForm.recipientName"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              placeholder="John Doe">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Personal Message (Optional)</label>
+            <textarea 
+              [(ngModel)]="purchaseForm.message"
+              rows="3"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              placeholder="Happy Birthday! Enjoy your gift!"></textarea>
+          </div>
+          
+          <div class="pt-4 border-t border-gray-200">
+            <div class="flex justify-between items-center mb-4">
+              <span class="font-medium text-gray-900">Total</span>
+              <span class="text-2xl font-bold text-purple-600">${{ purchaseForm.amount.toFixed(2) }}</span>
+            </div>
+            
+            <div class="flex gap-3">
+              <button 
+                (click)="showPurchaseModal.set(false)"
+                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                Cancel
+              </button>
+              <button 
+                (click)="purchaseGiftCard()"
+                [disabled]="!purchaseForm.recipientEmail || !purchaseForm.recipientName"
+                class="flex-1 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:from-pink-600 hover:to-purple-700 transition-all disabled:opacity-50">
+                Purchase
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Transactions Modal -->
+@if (showTransactionsModal() && selectedCard()) {
+  <div class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="showTransactionsModal.set(false)"></div>
+      
+      <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full mx-auto z-10 max-h-[80vh] overflow-hidden flex flex-col">
+        <div class="px-6 py-4 border-b border-gray-200 flex-shrink-0">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900">Transaction History</h3>
+              <p class="text-sm text-gray-500">Card: {{ selectedCard()!.code }}</p>
+            </div>
+            <button (click)="showTransactionsModal.set(false)" class="text-gray-400 hover:text-gray-500">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-6">
+          @if (selectedCard()!.transactions.length === 0) {
+            <p class="text-center text-gray-500 py-8">No transactions yet</p>
+          } @else {
+            <div class="space-y-3">
+              @for (tx of selectedCard()!.transactions; track tx.id) {
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <p class="font-medium text-gray-900">{{ tx.type }}</p>
+                    <p class="text-sm text-gray-500">{{ formatDate(tx.createdAt) }}</p>
+                    @if (tx.orderNumber) {
+                      <p class="text-sm text-gray-500">Order: {{ tx.orderNumber }}</p>
+                    }
+                  </div>
+                  <p [class]="tx.type === 'Reload' || tx.type === 'Issue' ? 'text-green-600' : 'text-red-600'" class="font-bold">
+                    {{ tx.type === 'Reload' || tx.type === 'Issue' ? '+' : '-' }}${{ tx.amount.toFixed(2) }}
+                  </p>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
+<app-footer />

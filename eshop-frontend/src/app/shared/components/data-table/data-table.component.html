@@ -1,0 +1,211 @@
+<div class="bg-white rounded-lg shadow overflow-hidden">
+  <!-- Toolbar -->
+  @if (showToolbar()) {
+    <div class="px-4 py-3 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <!-- Search -->
+      @if (searchable()) {
+        <div class="relative w-full sm:w-64">
+          <input
+            type="text"
+            [ngModel]="searchQuery()"
+            (ngModelChange)="onSearch($event)"
+            placeholder="Search..."
+            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+          />
+          <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+      }
+      
+      <!-- Actions slot -->
+      <div class="flex items-center space-x-2">
+        <ng-content select="[tableActions]"></ng-content>
+      </div>
+    </div>
+  }
+
+  <!-- Table -->
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          @if (selectable()) {
+            <th class="px-4 py-3 w-12">
+              <input
+                type="checkbox"
+                [checked]="allSelected()"
+                [indeterminate]="someSelected()"
+                (change)="toggleSelectAll($event)"
+                class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+            </th>
+          }
+          @for (column of columns(); track column.key) {
+            <th 
+              class="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider"
+              [class.cursor-pointer]="column.sortable"
+              [class.hover:bg-gray-100]="column.sortable"
+              [style.width]="column.width"
+              [class.text-left]="column.align !== 'center' && column.align !== 'right'"
+              [class.text-center]="column.align === 'center'"
+              [class.text-right]="column.align === 'right'"
+              (click)="column.sortable && onSort(column.key)"
+            >
+              <span class="flex items-center gap-1" [class.justify-center]="column.align === 'center'" [class.justify-end]="column.align === 'right'">
+                {{ column.label }}
+                @if (column.sortable) {
+                  @if (sortBy() === column.key) {
+                    <svg class="w-4 h-4" [class.rotate-180]="sortOrder() === 'desc'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                    </svg>
+                  } @else {
+                    <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                    </svg>
+                  }
+                }
+              </span>
+            </th>
+          }
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        @if (loading()) {
+          <tr>
+            <td [attr.colspan]="columns().length + (selectable() ? 1 : 0)" class="px-4 py-12 text-center">
+              <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-200 border-t-primary-600"></div>
+              <p class="mt-2 text-sm text-gray-500">Loading...</p>
+            </td>
+          </tr>
+        } @else if (data().length === 0) {
+          <tr>
+            <td [attr.colspan]="columns().length + (selectable() ? 1 : 0)" class="px-4 py-12 text-center">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+              </svg>
+              <p class="mt-2 text-sm text-gray-500">{{ emptyMessage() }}</p>
+            </td>
+          </tr>
+        } @else {
+          @for (row of data(); track trackByFn()(row)) {
+            <tr class="hover:bg-gray-50 transition-colors" [class.bg-primary-50]="isSelected(row)">
+              @if (selectable()) {
+                <td class="px-4 py-3 w-12">
+                  <input
+                    type="checkbox"
+                    [checked]="isSelected(row)"
+                    (change)="toggleSelect(row)"
+                    class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                </td>
+              }
+              @for (column of columns(); track column.key) {
+                <td 
+                  class="px-4 py-3 text-sm"
+                  [class.text-left]="column.align !== 'center' && column.align !== 'right'"
+                  [class.text-center]="column.align === 'center'"
+                  [class.text-right]="column.align === 'right'"
+                >
+                  @switch (column.type) {
+                    @case ('image') {
+                      @if (getValue(row, column.key)) {
+                        <img [src]="getValue(row, column.key)" alt="" class="w-10 h-10 rounded object-cover">
+                      } @else {
+                        <div class="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
+                          <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                          </svg>
+                        </div>
+                      }
+                    }
+                    @case ('currency') {
+                      <span class="font-medium">{{ getValue(row, column.key) | currency }}</span>
+                    }
+                    @case ('date') {
+                      {{ getValue(row, column.key) | date:'medium' }}
+                    }
+                    @case ('badge') {
+                      <span 
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        [style.background-color]="getBadgeColor(getValue(row, column.key), column.badgeColors) + '20'"
+                        [style.color]="getBadgeColor(getValue(row, column.key), column.badgeColors)"
+                      >
+                        {{ getValue(row, column.key) }}
+                      </span>
+                    }
+                    @case ('actions') {
+                      <div class="flex items-center gap-2 justify-end">
+                        @for (action of actions(); track action.action) {
+                          @if (!action.show || action.show(row)) {
+                            <button
+                              (click)="onAction(action.action, row)"
+                              [title]="action.label"
+                              class="p-1.5 rounded hover:bg-gray-100 transition-colors"
+                              [style.color]="action.color || '#6b7280'"
+                            >
+                              <span [innerHTML]="action.icon"></span>
+                            </button>
+                          }
+                        }
+                      </div>
+                    }
+                    @default {
+                      @if (column.format) {
+                        {{ column.format(getValue(row, column.key), row) }}
+                      } @else {
+                        {{ getValue(row, column.key) }}
+                      }
+                    }
+                  }
+                </td>
+              }
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  @if (showPagination() && totalItems() > 0) {
+    <div class="px-4 py-3 border-t flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="text-sm text-gray-500">
+        Showing {{ startItem() }} to {{ endItem() }} of {{ totalItems() }} results
+      </div>
+      <div class="flex items-center space-x-2">
+        <button
+          (click)="onPageChange(currentPage() - 1)"
+          [disabled]="currentPage() === 1"
+          class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Previous
+        </button>
+        
+        @for (page of visiblePages(); track page) {
+          @if (page === '...') {
+            <span class="px-2">...</span>
+          } @else {
+            <button
+              (click)="onPageChange(+page)"
+              class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50"
+              [class.bg-primary-600]="currentPage() === page"
+              [class.text-white]="currentPage() === page"
+              [class.border-primary-600]="currentPage() === page"
+            >
+              {{ page }}
+            </button>
+          }
+        }
+        
+        <button
+          (click)="onPageChange(currentPage() + 1)"
+          [disabled]="currentPage() === totalPages()"
+          class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  }
+</div>

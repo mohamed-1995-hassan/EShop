@@ -1,0 +1,247 @@
+<div class="flex min-h-screen bg-gray-100">
+  <app-sidebar [isOpen]="sidebarOpen()" />
+  
+  <div class="flex-1 flex flex-col">
+    <app-nav />
+    
+    <main class="flex-1 p-6 overflow-auto">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Vendor Orders</h1>
+          <p class="text-gray-600">Manage orders for your products</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <select
+            [(ngModel)]="filterStatus"
+            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Processing">Processing</option>
+            <option value="Shipped">Shipped</option>
+            <option value="Delivered">Delivered</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-sm text-gray-500">Pending</p>
+          <p class="text-2xl font-bold text-yellow-600">{{ getPendingCount() }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-sm text-gray-500">Processing</p>
+          <p class="text-2xl font-bold text-blue-600">{{ getProcessingCount() }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-sm text-gray-500">Shipped</p>
+          <p class="text-2xl font-bold text-purple-600">{{ getShippedCount() }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-sm text-gray-500">Total Revenue</p>
+          <p class="text-2xl font-bold text-green-600">{{ getTotalRevenue() | currency }}</p>
+        </div>
+      </div>
+
+      @if (loading()) {
+        <app-loading message="Loading orders..." />
+      } @else {
+        <!-- Orders Table -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Net Amount</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                @for (order of filteredOrders(); track order.id) {
+                  <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                      <button 
+                        (click)="viewOrder(order)"
+                        class="text-primary-600 hover:text-primary-700 font-medium"
+                      >
+                        #{{ order.orderNumber }}
+                      </button>
+                      <p class="text-xs text-gray-500">{{ order.createdAt | date:'short' }}</p>
+                    </td>
+                    <td class="px-6 py-4">
+                      <p class="text-sm text-gray-900">{{ order.customerName }}</p>
+                      <p class="text-xs text-gray-500">{{ order.customerEmail }}</p>
+                    </td>
+                    <td class="px-6 py-4">
+                      <p class="text-sm text-gray-900">{{ order.items.length }} item(s)</p>
+                      <p class="text-xs text-gray-500">{{ order.items[0]?.name }}{{ order.items.length > 1 ? '...' : '' }}</p>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span 
+                        class="px-2 py-1 text-xs rounded-full"
+                        [class.bg-yellow-100]="order.status === 'Pending'"
+                        [class.text-yellow-800]="order.status === 'Pending'"
+                        [class.bg-blue-100]="order.status === 'Processing'"
+                        [class.text-blue-800]="order.status === 'Processing'"
+                        [class.bg-purple-100]="order.status === 'Shipped'"
+                        [class.text-purple-800]="order.status === 'Shipped'"
+                        [class.bg-green-100]="order.status === 'Delivered'"
+                        [class.text-green-800]="order.status === 'Delivered'"
+                      >
+                        {{ order.status }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                      <p class="text-sm font-medium text-gray-900">{{ order.netAmount | currency }}</p>
+                      <p class="text-xs text-gray-500">-{{ order.commission | currency }} fee</p>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                      @if (order.status === 'Pending') {
+                        <button 
+                          (click)="processOrder(order)"
+                          class="text-blue-600 hover:text-blue-700 text-sm mr-3"
+                        >
+                          Process
+                        </button>
+                      }
+                      @if (order.status === 'Processing') {
+                        <button 
+                          (click)="shipOrder(order)"
+                          class="text-purple-600 hover:text-purple-700 text-sm mr-3"
+                        >
+                          Ship
+                        </button>
+                      }
+                      <button 
+                        (click)="viewOrder(order)"
+                        class="text-gray-600 hover:text-gray-700 text-sm"
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                      No orders found
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    </main>
+  </div>
+</div>
+
+<!-- Order Details Modal -->
+@if (showDetailsModal() && selectedOrder()) {
+  <div class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="showDetailsModal.set(false)"></div>
+      
+      <div class="relative bg-white rounded-lg max-w-2xl w-full mx-auto shadow-xl max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b sticky top-0 bg-white flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900">
+            Order #{{ selectedOrder()!.orderNumber }}
+          </h3>
+          <button (click)="showDetailsModal.set(false)" class="text-gray-400 hover:text-gray-500">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="p-6 space-y-6">
+          <!-- Status -->
+          <div class="flex items-center justify-between">
+            <span 
+              class="px-3 py-1.5 text-sm rounded-full font-medium"
+              [class.bg-yellow-100]="selectedOrder()!.status === 'Pending'"
+              [class.text-yellow-800]="selectedOrder()!.status === 'Pending'"
+              [class.bg-blue-100]="selectedOrder()!.status === 'Processing'"
+              [class.text-blue-800]="selectedOrder()!.status === 'Processing'"
+              [class.bg-purple-100]="selectedOrder()!.status === 'Shipped'"
+              [class.text-purple-800]="selectedOrder()!.status === 'Shipped'"
+              [class.bg-green-100]="selectedOrder()!.status === 'Delivered'"
+              [class.text-green-800]="selectedOrder()!.status === 'Delivered'"
+            >
+              {{ selectedOrder()!.status }}
+            </span>
+            <span class="text-sm text-gray-500">{{ selectedOrder()!.createdAt | date:'medium' }}</span>
+          </div>
+
+          <!-- Customer Info -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="font-medium text-gray-900 mb-2">Customer</h4>
+            <p class="text-sm text-gray-600">{{ selectedOrder()!.customerName }}</p>
+            <p class="text-sm text-gray-600">{{ selectedOrder()!.customerEmail }}</p>
+            <p class="text-sm text-gray-600 mt-2">{{ selectedOrder()!.shippingAddress }}</p>
+          </div>
+
+          <!-- Items -->
+          <div>
+            <h4 class="font-medium text-gray-900 mb-3">Items</h4>
+            <div class="space-y-2">
+              @for (item of selectedOrder()!.items; track item.name) {
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p class="font-medium text-gray-900">{{ item.name }}</p>
+                    <p class="text-sm text-gray-500">Qty: {{ item.quantity }}</p>
+                  </div>
+                  <p class="font-medium text-gray-900">{{ item.price * item.quantity | currency }}</p>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Totals -->
+          <div class="border-t pt-4 space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-500">Subtotal</span>
+              <span class="text-gray-900">{{ selectedOrder()!.subtotal | currency }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-500">Platform Fee</span>
+              <span class="text-red-600">-{{ selectedOrder()!.commission | currency }}</span>
+            </div>
+            <div class="flex justify-between text-lg font-semibold pt-2 border-t">
+              <span class="text-gray-900">Your Earnings</span>
+              <span class="text-green-600">{{ selectedOrder()!.netAmount | currency }}</span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          @if (selectedOrder()!.status === 'Pending' || selectedOrder()!.status === 'Processing') {
+            <div class="flex justify-end space-x-3 pt-4 border-t">
+              @if (selectedOrder()!.status === 'Pending') {
+                <button 
+                  (click)="processOrder(selectedOrder()!); showDetailsModal.set(false)"
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Mark as Processing
+                </button>
+              }
+              @if (selectedOrder()!.status === 'Processing') {
+                <button 
+                  (click)="shipOrder(selectedOrder()!); showDetailsModal.set(false)"
+                  class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                >
+                  Mark as Shipped
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,511 @@
+<div class="flex min-h-screen bg-gray-100">
+  <app-sidebar [isOpen]="sidebarOpen()" />
+  
+  <div class="flex-1 flex flex-col">
+    <app-nav />
+    
+    <main class="flex-1 p-6 overflow-auto">
+      <!-- Page Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Tax Configuration</h1>
+          <p class="text-gray-600">Manage tax rates and exemptions for different regions</p>
+        </div>
+        <button 
+          (click)="showCreateModal.set(true)"
+          class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center"
+        >
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          Add Tax Configuration
+        </button>
+      </div>
+
+      @if (loading()) {
+        <app-loading message="Loading tax configurations..." />
+      } @else {
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                </svg>
+              </div>
+              <div class="ml-4">
+                <p class="text-2xl font-bold text-gray-900">{{ taxConfigurations().length }}</p>
+                <p class="text-sm text-gray-500">Tax Configs</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <div class="ml-4">
+                <p class="text-2xl font-bold text-gray-900">{{ getActiveCount() }}</p>
+                <p class="text-sm text-gray-500">Active</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <div class="ml-4">
+                <p class="text-2xl font-bold text-gray-900">{{ getUniqueCountries() }}</p>
+                <p class="text-sm text-gray-500">Countries</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <div class="ml-4">
+                <p class="text-2xl font-bold text-gray-900">{{ getTotalExemptions() }}</p>
+                <p class="text-sm text-gray-500">Exemptions</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-lg shadow p-4 mb-6">
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="flex-1 min-w-64">
+              <div class="relative">
+                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input
+                  type="text"
+                  [(ngModel)]="searchQuery"
+                  placeholder="Search by name or country..."
+                  class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+            </div>
+            
+            <select
+              [(ngModel)]="filterType"
+              class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="">All Types</option>
+              <option value="VAT">VAT</option>
+              <option value="GST">GST</option>
+              <option value="SalesTax">Sales Tax</option>
+            </select>
+            
+            <select
+              [(ngModel)]="filterStatus"
+              class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tax Configurations Table -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Country/Region</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Default Rate</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tax Included</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                @for (config of filteredConfigurations(); track config.id) {
+                  <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                      <div class="font-medium text-gray-900">{{ config.name }}</div>
+                      <div class="text-sm text-gray-500">{{ config.categoryRates.length }} category rates</div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span 
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        [class.bg-blue-100]="config.type === 'VAT'"
+                        [class.text-blue-800]="config.type === 'VAT'"
+                        [class.bg-green-100]="config.type === 'GST'"
+                        [class.text-green-800]="config.type === 'GST'"
+                        [class.bg-purple-100]="config.type === 'SalesTax'"
+                        [class.text-purple-800]="config.type === 'SalesTax'"
+                      >
+                        {{ config.type }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4">
+                      <div class="flex items-center">
+                        <span class="text-lg mr-2">{{ getCountryFlag(config.countryCode) }}</span>
+                        <div>
+                          <div class="text-gray-900">{{ config.countryCode }}</div>
+                          @if (config.regionCode) {
+                            <div class="text-sm text-gray-500">{{ config.regionCode }}</div>
+                          }
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class="text-lg font-semibold text-gray-900">{{ config.defaultRate }}%</span>
+                    </td>
+                    <td class="px-6 py-4">
+                      @if (config.isTaxIncludedInPrice) {
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                          </svg>
+                          Included
+                        </span>
+                      } @else {
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                          </svg>
+                          Excluded
+                        </span>
+                      }
+                    </td>
+                    <td class="px-6 py-4">
+                      <button 
+                        (click)="toggleStatus(config)"
+                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                        [class.bg-primary-600]="config.isActive"
+                        [class.bg-gray-200]="!config.isActive"
+                      >
+                        <span 
+                          class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                          [class.translate-x-5]="config.isActive"
+                          [class.translate-x-0]="!config.isActive"
+                        ></span>
+                      </button>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                      <div class="flex items-center justify-end space-x-2">
+                        <button 
+                          (click)="viewDetails(config)"
+                          class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                          title="View Details"
+                        >
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                          </svg>
+                        </button>
+                        <button 
+                          (click)="editConfig(config)"
+                          class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg"
+                          title="Edit"
+                        >
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                          </svg>
+                        </button>
+                        <button 
+                          (click)="deleteConfig(config)"
+                          class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                          title="Delete"
+                        >
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="7" class="px-6 py-12 text-center">
+                      <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                      </svg>
+                      <p class="mt-2 text-gray-500">No tax configurations found</p>
+                      <button 
+                        (click)="showCreateModal.set(true)"
+                        class="mt-4 text-primary-600 hover:text-primary-700 font-medium"
+                      >
+                        Add your first tax configuration
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    </main>
+  </div>
+</div>
+
+<!-- Create/Edit Modal -->
+@if (showCreateModal()) {
+  <div class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="closeModal()"></div>
+      
+      <div class="relative bg-white rounded-lg max-w-2xl w-full mx-auto shadow-xl">
+        <div class="p-6 border-b flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900">
+            {{ editingConfig() ? 'Edit Tax Configuration' : 'Create Tax Configuration' }}
+          </h3>
+          <button (click)="closeModal()" class="text-gray-400 hover:text-gray-500">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        
+        <form [formGroup]="taxForm" (ngSubmit)="saveTaxConfig()" class="p-6 space-y-6">
+          <!-- Tax Type Selection -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-3">Tax Type</label>
+            <div class="grid grid-cols-3 gap-4">
+              @for (type of taxTypes; track type) {
+                <button
+                  type="button"
+                  (click)="taxForm.patchValue({ type })"
+                  class="p-4 border-2 rounded-lg text-center transition-all"
+                  [class.border-primary-500]="taxForm.get('type')?.value === type"
+                  [class.bg-primary-50]="taxForm.get('type')?.value === type"
+                  [class.border-gray-200]="taxForm.get('type')?.value !== type"
+                >
+                  <div class="font-medium text-gray-900">{{ type }}</div>
+                  <div class="text-xs text-gray-500 mt-1">
+                    {{ getTaxTypeDescription(type) }}
+                  </div>
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <input 
+                type="text" 
+                formControlName="name"
+                placeholder="e.g., Standard VAT"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Default Rate (%)</label>
+              <input 
+                type="number" 
+                formControlName="defaultRate"
+                step="0.01"
+                min="0"
+                max="100"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Country Code</label>
+              <select
+                formControlName="countryCode"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="">Select country</option>
+                @for (country of countries; track country.code) {
+                  <option [value]="country.code">{{ country.flag }} {{ country.name }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Region Code (Optional)</label>
+              <input 
+                type="text" 
+                formControlName="regionCode"
+                placeholder="e.g., CA, NY"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+          </div>
+
+          <div class="flex items-center">
+            <input 
+              type="checkbox" 
+              formControlName="isTaxIncludedInPrice"
+              id="taxIncluded"
+              class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            />
+            <label for="taxIncluded" class="ml-2 text-sm text-gray-700">
+              Tax is included in product prices
+            </label>
+          </div>
+
+          <div class="flex justify-end space-x-3 pt-4 border-t">
+            <button 
+              type="button"
+              (click)="closeModal()"
+              class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit"
+              [disabled]="saving()"
+              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+            >
+              {{ saving() ? 'Saving...' : 'Save Configuration' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Details Modal -->
+@if (showDetailsModal() && selectedConfig()) {
+  <div class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="showDetailsModal.set(false)"></div>
+      
+      <div class="relative bg-white rounded-lg max-w-3xl w-full mx-auto shadow-xl max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b flex items-center justify-between sticky top-0 bg-white">
+          <h3 class="text-lg font-semibold text-gray-900">
+            {{ selectedConfig()!.name }} Details
+          </h3>
+          <button (click)="showDetailsModal.set(false)" class="text-gray-400 hover:text-gray-500">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="p-6 space-y-6">
+          <!-- General Info -->
+          <div class="grid grid-cols-3 gap-4">
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-sm text-gray-500">Type</p>
+              <p class="text-lg font-semibold">{{ selectedConfig()!.type }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-sm text-gray-500">Default Rate</p>
+              <p class="text-lg font-semibold">{{ selectedConfig()!.defaultRate }}%</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-sm text-gray-500">Country</p>
+              <p class="text-lg font-semibold">{{ getCountryFlag(selectedConfig()!.countryCode) }} {{ selectedConfig()!.countryCode }}</p>
+            </div>
+          </div>
+
+          <!-- Category Rates -->
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="font-semibold text-gray-900">Category Rates</h4>
+              <button 
+                (click)="showAddCategoryRateModal.set(true)"
+                class="text-sm text-primary-600 hover:text-primary-700 font-medium"
+              >
+                + Add Rate
+              </button>
+            </div>
+            
+            @if (selectedConfig()!.categoryRates.length > 0) {
+              <div class="space-y-2">
+                @for (rate of selectedConfig()!.categoryRates; track rate.id) {
+                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p class="font-medium text-gray-900">{{ rate.categoryName }}</p>
+                      @if (rate.description) {
+                        <p class="text-sm text-gray-500">{{ rate.description }}</p>
+                      }
+                    </div>
+                    <div class="flex items-center space-x-4">
+                      <span class="text-lg font-semibold text-primary-600">{{ rate.rate }}%</span>
+                      <button class="text-gray-400 hover:text-red-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <p class="text-gray-500 text-center py-4">No category-specific rates configured</p>
+            }
+          </div>
+
+          <!-- Exemptions -->
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="font-semibold text-gray-900">Tax Exemptions</h4>
+              <button 
+                (click)="showAddExemptionModal.set(true)"
+                class="text-sm text-primary-600 hover:text-primary-700 font-medium"
+              >
+                + Add Exemption
+              </button>
+            </div>
+            
+            @if (selectedConfig()!.exemptions.length > 0) {
+              <div class="space-y-2">
+                @for (exemption of selectedConfig()!.exemptions; track exemption.id) {
+                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div class="flex items-center space-x-2">
+                        <span 
+                          class="px-2 py-0.5 text-xs font-medium rounded"
+                          [class.bg-blue-100]="exemption.type === 'Customer'"
+                          [class.text-blue-800]="exemption.type === 'Customer'"
+                          [class.bg-green-100]="exemption.type === 'Product'"
+                          [class.text-green-800]="exemption.type === 'Product'"
+                          [class.bg-purple-100]="exemption.type === 'Category'"
+                          [class.text-purple-800]="exemption.type === 'Category'"
+                          [class.bg-yellow-100]="exemption.type === 'Region'"
+                          [class.text-yellow-800]="exemption.type === 'Region'"
+                        >
+                          {{ exemption.type }}
+                        </span>
+                        <span class="font-medium text-gray-900">{{ exemption.description }}</span>
+                      </div>
+                      @if (exemption.expiresAt) {
+                        <p class="text-sm text-gray-500 mt-1">Expires: {{ exemption.expiresAt | date:'mediumDate' }}</p>
+                      }
+                    </div>
+                    <button class="text-gray-400 hover:text-red-600">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                    </button>
+                  </div>
+                }
+              </div>
+            } @else {
+              <p class="text-gray-500 text-center py-4">No exemptions configured</p>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}

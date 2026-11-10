@@ -1,0 +1,486 @@
+<app-header />
+<main class="min-h-screen bg-gray-50">
+  <!-- Hero Section -->
+  <section class="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16">
+    <div class="container mx-auto px-4 text-center">
+      <h1 class="text-4xl font-bold mb-4">Affiliate Program</h1>
+      <p class="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
+        Earn money by promoting our products. Get up to 15% commission on every sale you refer.
+      </p>
+      @if (!isAffiliate()) {
+        <button 
+          (click)="showApplyModal.set(true)"
+          class="px-8 py-3 bg-white text-primary-600 rounded-lg font-semibold hover:bg-primary-50 transition-colors"
+        >
+          Join Now - It's Free!
+        </button>
+      }
+    </div>
+  </section>
+
+  <div class="container mx-auto px-4 py-12">
+    @if (loading()) {
+      <app-loading message="Loading affiliate data..." />
+    } @else if (isAffiliate() && affiliate()) {
+      <!-- Affiliate Dashboard -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900">Welcome back, {{ affiliate()!.name }}!</h2>
+            <p class="text-gray-600">Your affiliate code: 
+              <span class="font-mono bg-gray-100 px-2 py-1 rounded">{{ affiliate()!.code }}</span>
+              <button (click)="copyCode()" class="ml-2 text-primary-600 hover:text-primary-700">
+                <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+              </button>
+            </p>
+          </div>
+          <span 
+            class="px-4 py-2 rounded-full text-sm font-medium"
+            [class.bg-green-100]="affiliate()!.status === 'Active'"
+            [class.text-green-800]="affiliate()!.status === 'Active'"
+            [class.bg-yellow-100]="affiliate()!.status === 'Pending'"
+            [class.text-yellow-800]="affiliate()!.status === 'Pending'"
+            [class.bg-red-100]="affiliate()!.status === 'Suspended'"
+            [class.text-red-800]="affiliate()!.status === 'Suspended'"
+          >
+            {{ affiliate()!.status }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500">Total Earnings</p>
+              <p class="text-2xl font-bold text-gray-900">{{ affiliate()!.totalEarnings | currency }}</p>
+            </div>
+            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500">Pending Balance</p>
+              <p class="text-2xl font-bold text-primary-600">{{ affiliate()!.pendingEarnings | currency }}</p>
+            </div>
+            <div class="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+          </div>
+          @if (affiliate()!.pendingEarnings >= 50) {
+            <button 
+              (click)="requestPayout()"
+              class="mt-3 w-full px-3 py-1.5 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700"
+            >
+              Request Payout
+            </button>
+          }
+        </div>
+        
+        <div class="bg-white rounded-xl shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500">Commission Rate</p>
+              <p class="text-2xl font-bold text-gray-900">{{ affiliate()!.commissionRate }}%</p>
+            </div>
+            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500">Total Referrals</p>
+              <p class="text-2xl font-bold text-gray-900">{{ affiliate()!.referrals.length }}</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Affiliate Link -->
+      <div class="bg-white rounded-xl shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Your Affiliate Link</h3>
+        <div class="flex items-center space-x-4">
+          <input
+            type="text"
+            [value]="getAffiliateLink()"
+            readonly
+            class="flex-1 px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-600"
+          />
+          <button 
+            (click)="copyLink()"
+            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center"
+          >
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            Copy Link
+          </button>
+        </div>
+        <p class="text-sm text-gray-500 mt-2">Share this link with your audience to earn commissions</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="bg-white rounded-xl shadow">
+        <div class="border-b">
+          <nav class="flex">
+            @for (tab of tabs; track tab.id) {
+              <button 
+                (click)="activeTab.set(tab.id)"
+                class="px-6 py-4 text-sm font-medium border-b-2 -mb-px"
+                [class.border-primary-600]="activeTab() === tab.id"
+                [class.text-primary-600]="activeTab() === tab.id"
+                [class.border-transparent]="activeTab() !== tab.id"
+                [class.text-gray-500]="activeTab() !== tab.id"
+              >
+                {{ tab.label }}
+              </button>
+            }
+          </nav>
+        </div>
+        
+        <div class="p-6">
+          <!-- Commissions Tab -->
+          @if (activeTab() === 'commissions') {
+            @if (affiliate()!.commissions.length > 0) {
+              <div class="overflow-x-auto">
+                <table class="w-full">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order Amount</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Commission</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200">
+                    @for (commission of affiliate()!.commissions; track commission.id) {
+                      <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-4 text-sm font-medium text-gray-900">{{ commission.orderId | slice:0:8 }}...</td>
+                        <td class="px-4 py-4 text-sm text-gray-600">{{ commission.orderAmount | currency }}</td>
+                        <td class="px-4 py-4 text-sm font-semibold text-green-600">+{{ commission.commissionAmount | currency }}</td>
+                        <td class="px-4 py-4">
+                          <span 
+                            class="px-2 py-1 text-xs rounded-full"
+                            [class.bg-green-100]="commission.status === 'Approved'"
+                            [class.text-green-800]="commission.status === 'Approved'"
+                            [class.bg-yellow-100]="commission.status === 'Pending'"
+                            [class.text-yellow-800]="commission.status === 'Pending'"
+                          >
+                            {{ commission.status }}
+                          </span>
+                        </td>
+                        <td class="px-4 py-4 text-sm text-gray-500">{{ commission.createdAt | date:'short' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="mt-2 text-gray-500">No commissions yet. Share your link to start earning!</p>
+              </div>
+            }
+          }
+
+          <!-- Referrals Tab -->
+          @if (activeTab() === 'referrals') {
+            @if (affiliate()!.referrals.length > 0) {
+              <div class="overflow-x-auto">
+                <table class="w-full">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Landing Page</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Click Date</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Converted</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200">
+                    @for (referral of affiliate()!.referrals; track referral.id) {
+                      <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-4 text-sm text-gray-600">{{ referral.landingPage || 'Homepage' }}</td>
+                        <td class="px-4 py-4">
+                          <span 
+                            class="px-2 py-1 text-xs rounded-full"
+                            [class.bg-green-100]="referral.status === 'Converted'"
+                            [class.text-green-800]="referral.status === 'Converted'"
+                            [class.bg-gray-100]="referral.status === 'Clicked'"
+                            [class.text-gray-800]="referral.status === 'Clicked'"
+                          >
+                            {{ referral.status }}
+                          </span>
+                        </td>
+                        <td class="px-4 py-4 text-sm text-gray-500">{{ referral.createdAt | date:'short' }}</td>
+                        <td class="px-4 py-4 text-sm text-gray-500">
+                          @if (referral.convertedAt) {
+                            {{ referral.convertedAt | date:'short' }}
+                          } @else {
+                            -
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+                <p class="mt-2 text-gray-500">No referrals yet. Share your link to track clicks!</p>
+              </div>
+            }
+          }
+
+          <!-- Payouts Tab -->
+          @if (activeTab() === 'payouts') {
+            @if (affiliate()!.payouts.length > 0) {
+              <div class="overflow-x-auto">
+                <table class="w-full">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requested</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Processed</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200">
+                    @for (payout of affiliate()!.payouts; track payout.id) {
+                      <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-4 text-sm font-semibold text-gray-900">{{ payout.amount | currency }}</td>
+                        <td class="px-4 py-4 text-sm text-gray-600">{{ payout.method }}</td>
+                        <td class="px-4 py-4">
+                          <span 
+                            class="px-2 py-1 text-xs rounded-full"
+                            [class.bg-green-100]="payout.status === 'Completed'"
+                            [class.text-green-800]="payout.status === 'Completed'"
+                            [class.bg-yellow-100]="payout.status === 'Pending'"
+                            [class.text-yellow-800]="payout.status === 'Pending'"
+                            [class.bg-blue-100]="payout.status === 'Processing'"
+                            [class.text-blue-800]="payout.status === 'Processing'"
+                          >
+                            {{ payout.status }}
+                          </span>
+                        </td>
+                        <td class="px-4 py-4 text-sm text-gray-500">{{ payout.requestedAt | date:'short' }}</td>
+                        <td class="px-4 py-4 text-sm text-gray-500">
+                          @if (payout.processedAt) {
+                            {{ payout.processedAt | date:'short' }}
+                          } @else {
+                            -
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                <p class="mt-2 text-gray-500">No payouts yet. Earn at least $50 to request a payout.</p>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    } @else {
+      <!-- Non-Affiliate View - Program Info -->
+      <!-- How It Works -->
+      <section class="mb-16">
+        <h2 class="text-2xl font-bold text-gray-900 text-center mb-12">How It Works</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="text-center">
+            <div class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span class="text-2xl font-bold text-primary-600">1</span>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Sign Up</h3>
+            <p class="text-gray-600">Join our affiliate program for free. Get instant access to your dashboard.</p>
+          </div>
+          <div class="text-center">
+            <div class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span class="text-2xl font-bold text-primary-600">2</span>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Share & Promote</h3>
+            <p class="text-gray-600">Share your unique link on your website, social media, or email list.</p>
+          </div>
+          <div class="text-center">
+            <div class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span class="text-2xl font-bold text-primary-600">3</span>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Earn Money</h3>
+            <p class="text-gray-600">Earn commission on every sale made through your referral link.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Commission Tiers -->
+      <section class="mb-16">
+        <h2 class="text-2xl font-bold text-gray-900 text-center mb-12">Commission Tiers</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="bg-white rounded-xl shadow p-8 border-2 border-gray-200">
+            <div class="text-center mb-6">
+              <span class="text-gray-500 font-medium">Starter</span>
+              <div class="text-4xl font-bold text-gray-900 mt-2">10%</div>
+              <p class="text-sm text-gray-500">Commission rate</p>
+            </div>
+            <ul class="space-y-3 text-sm text-gray-600">
+              <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>0-10 sales/month</li>
+              <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>30-day cookie</li>
+              <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>$50 min payout</li>
+            </ul>
+          </div>
+          
+          <div class="bg-white rounded-xl shadow p-8 border-2 border-primary-500 relative">
+            <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary-500 text-white text-xs font-medium rounded-full">Popular</div>
+            <div class="text-center mb-6">
+              <span class="text-primary-600 font-medium">Pro</span>
+              <div class="text-4xl font-bold text-gray-900 mt-2">12%</div>
+              <p class="text-sm text-gray-500">Commission rate</p>
+            </div>
+            <ul class="space-y-3 text-sm text-gray-600">
+              <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>11-50 sales/month</li>
+              <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>60-day cookie</li>
+              <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>$25 min payout</li>
+              <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Priority support</li>
+            </ul>
+          </div>
+          
+          <div class="bg-white rounded-xl shadow p-8 border-2 border-yellow-400">
+            <div class="text-center mb-6">
+              <span class="text-yellow-600 font-medium">Elite</span>
+              <div class="text-4xl font-bold text-gray-900 mt-2">15%</div>
+              <p class="text-sm text-gray-500">Commission rate</p>
+            </div>
+            <ul class="space-y-3 text-sm text-gray-600">
+              <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>51+ sales/month</li>
+              <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>90-day cookie</li>
+              <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>No min payout</li>
+              <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Dedicated manager</li>
+              <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Custom creatives</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA Section -->
+      <section class="bg-gradient-to-r from-primary-600 to-primary-800 rounded-2xl p-12 text-center text-white">
+        <h2 class="text-3xl font-bold mb-4">Ready to Start Earning?</h2>
+        <p class="text-primary-100 mb-8 max-w-xl mx-auto">
+          Join thousands of affiliates who are already earning passive income with our program.
+        </p>
+        <button 
+          (click)="showApplyModal.set(true)"
+          class="px-8 py-3 bg-white text-primary-600 rounded-lg font-semibold hover:bg-primary-50 transition-colors"
+        >
+          Apply Now
+        </button>
+      </section>
+    }
+  </div>
+</main>
+
+<!-- Apply Modal -->
+@if (showApplyModal()) {
+  <div class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="showApplyModal.set(false)"></div>
+      
+      <div class="relative bg-white rounded-lg max-w-md w-full mx-auto shadow-xl">
+        <div class="p-6 border-b">
+          <h3 class="text-lg font-semibold text-gray-900">Join Affiliate Program</h3>
+          <p class="text-sm text-gray-500">Fill out the form below to apply</p>
+        </div>
+        
+        <form [formGroup]="applyForm" (ngSubmit)="submitApplication()" class="p-6 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+            <input 
+              type="text" 
+              formControlName="name"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input 
+              type="email" 
+              formControlName="email"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Website (Optional)</label>
+            <input 
+              type="url" 
+              formControlName="website"
+              placeholder="https://yourwebsite.com"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+          
+          <div class="flex items-start">
+            <input 
+              type="checkbox" 
+              formControlName="agreeTerms"
+              id="agreeTerms"
+              class="h-4 w-4 mt-0.5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            />
+            <label for="agreeTerms" class="ml-2 text-sm text-gray-600">
+              I agree to the <a href="#" class="text-primary-600 hover:text-primary-700">Affiliate Terms & Conditions</a>
+            </label>
+          </div>
+
+          <div class="flex justify-end space-x-3 pt-4">
+            <button 
+              type="button"
+              (click)="showApplyModal.set(false)"
+              class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit"
+              [disabled]="saving() || applyForm.invalid"
+              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+            >
+              {{ saving() ? 'Submitting...' : 'Submit Application' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+}
+
+<app-footer />

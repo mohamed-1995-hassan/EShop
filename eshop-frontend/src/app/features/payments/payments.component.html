@@ -1,0 +1,221 @@
+<app-header />
+<main class="min-h-screen bg-gray-50 py-8">
+  <div class="container mx-auto px-4 max-w-6xl">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Payment History</h1>
+      <p class="text-gray-600 mt-1">View and manage your payment transactions</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-gray-900">${{ totalSuccessful().toLocaleString() }}</p>
+            <p class="text-sm text-gray-500">Successful Payments</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-gray-900">{{ payments().length }}</p>
+            <p class="text-sm text-gray-500">Total Transactions</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-gray-900">{{ pendingCount() }}</p>
+            <p class="text-sm text-gray-500">Pending</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-gray-900">${{ totalRefunded().toLocaleString() }}</p>
+            <p class="text-sm text-gray-500">Refunded</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+      <div class="flex flex-col md:flex-row gap-4">
+        <input 
+          type="text" 
+          [(ngModel)]="searchQuery"
+          placeholder="Search by order or transaction ID..."
+          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+        <select 
+          [(ngModel)]="statusFilter"
+          class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          <option value="">All Statuses</option>
+          <option value="Pending">Pending</option>
+          <option value="Completed">Completed</option>
+          <option value="Failed">Failed</option>
+          <option value="Refunded">Refunded</option>
+        </select>
+        <select 
+          [(ngModel)]="methodFilter"
+          class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          <option value="">All Methods</option>
+          <option value="CreditCard">Credit Card</option>
+          <option value="PayPal">PayPal</option>
+          <option value="BankTransfer">Bank Transfer</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    @if (loading()) {
+      <div class="bg-white rounded-xl shadow-sm p-12 text-center">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
+        <p class="text-gray-500 mt-4">Loading payments...</p>
+      </div>
+    }
+
+    <!-- Empty State -->
+    @if (!loading() && filteredPayments().length === 0) {
+      <div class="bg-white rounded-xl shadow-sm p-12 text-center">
+        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">No Payments Found</h3>
+        <p class="text-gray-500">You don't have any payment history yet.</p>
+      </div>
+    }
+
+    <!-- Payments List -->
+    @if (!loading() && filteredPayments().length > 0) {
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              @for (payment of filteredPayments(); track payment.id) {
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <p class="font-mono text-sm text-gray-900">{{ payment.transactionId }}</p>
+                      <p class="text-sm text-gray-500">Order #{{ payment.orderNumber }}</p>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ formatDate(payment.createdAt) }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center gap-2">
+                      <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        @switch (payment.method) {
+                          @case ('CreditCard') {
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                          }
+                          @case ('PayPal') {
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                          }
+                          @default {
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"></path>
+                          }
+                        }
+                      </svg>
+                      <span class="text-sm text-gray-700">{{ payment.method }}</span>
+                    </div>
+                    @if (payment.cardLast4) {
+                      <p class="text-xs text-gray-400 mt-1">•••• {{ payment.cardLast4 }}</p>
+                    }
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span [class]="getStatusClass(payment.status)" class="px-3 py-1 rounded-full text-xs font-medium">
+                      {{ payment.status }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-right">
+                    <p class="font-semibold text-gray-900">{{ payment.currency }} {{ payment.amount.toFixed(2) }}</p>
+                    @if (payment.refundedAmount) {
+                      <p class="text-xs text-red-600">-{{ payment.currency }} {{ payment.refundedAmount.toFixed(2) }} refunded</p>
+                    }
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-right">
+                    <button 
+                      (click)="viewDetails(payment)"
+                      class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Payment Methods Section -->
+    <div class="mt-8 bg-white rounded-xl shadow-sm p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Saved Payment Methods</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        @for (card of savedCards; track card.id) {
+          <div class="border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+              </div>
+              <div>
+                <p class="font-medium text-gray-900">{{ card.brand }} •••• {{ card.last4 }}</p>
+                <p class="text-sm text-gray-500">Expires {{ card.expMonth }}/{{ card.expYear }}</p>
+              </div>
+            </div>
+            @if (card.isDefault) {
+              <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-medium">Default</span>
+            }
+          </div>
+        }
+        <button class="border-2 border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-center gap-2 text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          Add Payment Method
+        </button>
+      </div>
+    </div>
+  </div>
+</main>
+<app-footer />

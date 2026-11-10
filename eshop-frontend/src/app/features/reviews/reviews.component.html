@@ -1,0 +1,296 @@
+<app-header />
+<main class="min-h-screen bg-gray-50 py-8">
+  <div class="container mx-auto px-4 max-w-6xl">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">My Reviews</h1>
+      <p class="text-gray-600 mt-1">Manage your product reviews and ratings</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-gray-900">{{ reviews().length }}</p>
+            <p class="text-sm text-gray-500">Total Reviews</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-gray-900">{{ approvedCount() }}</p>
+            <p class="text-sm text-gray-500">Published</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-gray-900">{{ pendingCount() }}</p>
+            <p class="text-sm text-gray-500">Pending</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-gray-900">{{ averageRating().toFixed(1) }}</p>
+            <p class="text-sm text-gray-500">Avg Rating</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="bg-white rounded-xl shadow-sm mb-6">
+      <div class="border-b border-gray-200">
+        <nav class="flex gap-8 px-6" aria-label="Tabs">
+          @for (tab of tabs; track tab.value) {
+            <button 
+              (click)="activeTab.set(tab.value)"
+              [class]="activeTab() === tab.value ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+              class="py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+              {{ tab.label }}
+            </button>
+          }
+        </nav>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    @if (loading()) {
+      <div class="bg-white rounded-xl shadow-sm p-12 text-center">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
+        <p class="text-gray-500 mt-4">Loading reviews...</p>
+      </div>
+    }
+
+    <!-- Empty State -->
+    @if (!loading() && filteredReviews().length === 0) {
+      <div class="bg-white rounded-xl shadow-sm p-12 text-center">
+        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">No Reviews Yet</h3>
+        <p class="text-gray-500 mb-6">You haven't written any reviews yet. Share your experience with products you've purchased!</p>
+        <a 
+          routerLink="/orders"
+          class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+          View Past Orders
+        </a>
+      </div>
+    }
+
+    <!-- Reviews List -->
+    @if (!loading() && filteredReviews().length > 0) {
+      <div class="space-y-4">
+        @for (review of filteredReviews(); track review.id) {
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="p-6">
+              <!-- Review Header -->
+              <div class="flex items-start justify-between mb-4">
+                <div class="flex items-start gap-4">
+                  <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <a [routerLink]="['/products', review.productId]" class="font-medium text-gray-900 hover:text-blue-600">
+                      Product #{{ review.productId.slice(0, 8) }}
+                    </a>
+                    <div class="flex items-center gap-2 mt-1">
+                      <div class="flex">
+                        @for (star of [1,2,3,4,5]; track star) {
+                          <svg [class]="star <= review.rating ? 'text-yellow-400' : 'text-gray-300'" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                          </svg>
+                        }
+                      </div>
+                      <span class="text-sm text-gray-500">{{ formatDate(review.createdAt) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span [class]="getStatusClass(review.status)" class="px-3 py-1 rounded-full text-xs font-medium">
+                    {{ review.status }}
+                  </span>
+                  @if (review.isVerifiedPurchase) {
+                    <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                      </svg>
+                      Verified
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <!-- Review Content -->
+              @if (review.title) {
+                <h3 class="font-semibold text-gray-900 mb-2">{{ review.title }}</h3>
+              }
+              <p class="text-gray-700 mb-4">{{ review.content }}</p>
+
+              <!-- Review Images -->
+              @if (review.images.length > 0) {
+                <div class="flex gap-2 mb-4">
+                  @for (image of review.images; track image) {
+                    <img [src]="image" alt="Review image" class="w-20 h-20 object-cover rounded-lg">
+                  }
+                </div>
+              }
+
+              <!-- Helpful Votes -->
+              <div class="flex items-center gap-4 text-sm text-gray-500">
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
+                  </svg>
+                  {{ review.helpfulVotes }} helpful
+                </span>
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
+                  </svg>
+                  {{ review.unhelpfulVotes }}
+                </span>
+              </div>
+
+              <!-- Store Response -->
+              @if (review.response) {
+                <div class="mt-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                  <div class="flex items-center gap-2 mb-2">
+                    <span class="font-medium text-blue-900">Store Response</span>
+                    <span class="text-sm text-blue-600">{{ formatDate(review.response.respondedAt) }}</span>
+                  </div>
+                  <p class="text-blue-800">{{ review.response.content }}</p>
+                </div>
+              }
+            </div>
+
+            <!-- Actions -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+              <button 
+                (click)="editReview(review)"
+                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-white transition-colors flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                Edit
+              </button>
+              <a 
+                [routerLink]="['/products', review.productId]"
+                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-white transition-colors">
+                View Product
+              </a>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</main>
+
+<!-- Edit Review Modal -->
+@if (showEditModal() && selectedReview()) {
+  <div class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="closeEditModal()"></div>
+      
+      <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full mx-auto z-10">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">Edit Review</h3>
+            <button (click)="closeEditModal()" class="text-gray-400 hover:text-gray-500">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <form (ngSubmit)="saveReview()" class="p-6 space-y-4">
+          <!-- Rating -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+            <div class="flex gap-1">
+              @for (star of [1,2,3,4,5]; track star) {
+                <button 
+                  type="button"
+                  (click)="editForm.rating = star"
+                  [class]="star <= editForm.rating ? 'text-yellow-400' : 'text-gray-300'"
+                  class="hover:text-yellow-400 transition-colors">
+                  <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                  </svg>
+                </button>
+              }
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Title (Optional)</label>
+            <input 
+              type="text" 
+              [(ngModel)]="editForm.title"
+              name="title"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Summary of your review">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Review</label>
+            <textarea 
+              [(ngModel)]="editForm.content"
+              name="content"
+              required
+              rows="4"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Share your experience with this product..."></textarea>
+          </div>
+          
+          <div class="flex gap-3 pt-4">
+            <button 
+              type="button"
+              (click)="closeEditModal()"
+              class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+              Cancel
+            </button>
+            <button 
+              type="submit"
+              [disabled]="saving()"
+              class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400">
+              {{ saving() ? 'Saving...' : 'Save Changes' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+}
+<app-footer />

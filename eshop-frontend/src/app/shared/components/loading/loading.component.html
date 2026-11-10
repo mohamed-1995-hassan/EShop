@@ -1,0 +1,30 @@
+@if (fullScreen()) {
+  <div class="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div class="text-center">
+      <div class="inline-block animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" 
+           [style.width.px]="size()" 
+           [style.height.px]="size()">
+      </div>
+      @if (message()) {
+        <p class="mt-4 text-gray-600">{{ message() }}</p>
+      }
+    </div>
+  </div>
+} @else if (overlay()) {
+  <div class="absolute inset-0 bg-white/60 z-10 flex items-center justify-center rounded-lg">
+    <div class="inline-block animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" 
+         [style.width.px]="size()" 
+         [style.height.px]="size()">
+    </div>
+  </div>
+} @else {
+  <div class="flex items-center justify-center p-4">
+    <div class="inline-block animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" 
+         [style.width.px]="size()" 
+         [style.height.px]="size()">
+    </div>
+    @if (message()) {
+      <span class="ml-3 text-gray-600">{{ message() }}</span>
+    }
+  </div>
+}

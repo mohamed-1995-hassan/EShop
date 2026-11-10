@@ -1,0 +1,236 @@
+<app-header />
+<main class="min-h-screen bg-gray-100 py-8">
+  <div class="container mx-auto px-4 max-w-6xl">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Settings</h1>
+      <p class="text-gray-600 mt-1">Manage your store settings and preferences</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <!-- Sidebar -->
+      <div class="lg:col-span-1">
+        <nav class="bg-white rounded-xl shadow-sm overflow-hidden">
+          @for (section of sections; track section.id) {
+            <button 
+              (click)="activeSection.set(section.id)"
+              [class]="activeSection() === section.id ? 'bg-blue-50 border-l-4 border-blue-600 text-blue-600' : 'hover:bg-gray-50 text-gray-700'"
+              class="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="section.icon"></path>
+              </svg>
+              {{ section.label }}
+            </button>
+          }
+        </nav>
+      </div>
+
+      <!-- Content -->
+      <div class="lg:col-span-3">
+        <!-- General Settings -->
+        @if (activeSection() === 'general') {
+          <div class="bg-white rounded-xl shadow-sm">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h2 class="text-lg font-semibold text-gray-900">General Settings</h2>
+            </div>
+            <div class="p-6 space-y-6">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
+                <input type="text" [(ngModel)]="settings.storeName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Store Description</label>
+                <textarea [(ngModel)]="settings.storeDescription" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
+                  <input type="email" [(ngModel)]="settings.contactEmail" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
+                  <input type="tel" [(ngModel)]="settings.contactPhone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+                <select [(ngModel)]="settings.timezone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                  <option value="America/New_York">Eastern Time (ET)</option>
+                  <option value="America/Chicago">Central Time (CT)</option>
+                  <option value="America/Denver">Mountain Time (MT)</option>
+                  <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                  <option value="Europe/London">London (GMT)</option>
+                  <option value="Europe/Paris">Paris (CET)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Currency & Tax -->
+        @if (activeSection() === 'currency') {
+          <div class="bg-white rounded-xl shadow-sm">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h2 class="text-lg font-semibold text-gray-900">Currency & Tax Settings</h2>
+            </div>
+            <div class="p-6 space-y-6">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Default Currency</label>
+                  <select [(ngModel)]="settings.currency" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="USD">USD - US Dollar</option>
+                    <option value="EUR">EUR - Euro</option>
+                    <option value="GBP">GBP - British Pound</option>
+                    <option value="CAD">CAD - Canadian Dollar</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Currency Symbol Position</label>
+                  <select [(ngModel)]="settings.currencyPosition" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="before">Before price ($99.99)</option>
+                    <option value="after">After price (99.99$)</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" [(ngModel)]="settings.taxEnabled" class="w-4 h-4 text-blue-600 rounded">
+                  <span class="text-sm font-medium text-gray-700">Enable Tax Calculation</span>
+                </label>
+              </div>
+              @if (settings.taxEnabled) {
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Default Tax Rate (%)</label>
+                    <input type="number" [(ngModel)]="settings.taxRate" min="0" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tax Display</label>
+                    <select [(ngModel)]="settings.taxDisplay" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                      <option value="included">Included in price</option>
+                      <option value="excluded">Added at checkout</option>
+                    </select>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Shipping -->
+        @if (activeSection() === 'shipping') {
+          <div class="bg-white rounded-xl shadow-sm">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h2 class="text-lg font-semibold text-gray-900">Shipping Settings</h2>
+            </div>
+            <div class="p-6 space-y-6">
+              <div>
+                <label class="flex items-center gap-2 mb-4">
+                  <input type="checkbox" [(ngModel)]="settings.freeShippingEnabled" class="w-4 h-4 text-blue-600 rounded">
+                  <span class="text-sm font-medium text-gray-700">Enable Free Shipping</span>
+                </label>
+                @if (settings.freeShippingEnabled) {
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Free Shipping Minimum Order</label>
+                    <input type="number" [(ngModel)]="settings.freeShippingThreshold" min="0" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                  </div>
+                }
+              </div>
+              <div>
+                <h3 class="text-sm font-medium text-gray-700 mb-3">Shipping Zones</h3>
+                <div class="space-y-3">
+                  @for (zone of shippingZones; track zone.name) {
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <p class="font-medium text-gray-900">{{ zone.name }}</p>
+                        <p class="text-sm text-gray-500">{{ zone.countries.join(', ') }}</p>
+                      </div>
+                      <div class="text-right">
+                        <p class="font-medium text-gray-900">${{ zone.rate.toFixed(2) }}</p>
+                        <p class="text-sm text-gray-500">{{ zone.estimatedDays }} days</p>
+                      </div>
+                    </div>
+                  }
+                </div>
+                <button class="mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium">+ Add Shipping Zone</button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Notifications -->
+        @if (activeSection() === 'notifications') {
+          <div class="bg-white rounded-xl shadow-sm">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h2 class="text-lg font-semibold text-gray-900">Notification Settings</h2>
+            </div>
+            <div class="p-6 space-y-6">
+              <div class="space-y-4">
+                @for (notif of notifications; track notif.key) {
+                  <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                      <p class="font-medium text-gray-900">{{ notif.label }}</p>
+                      <p class="text-sm text-gray-500">{{ notif.description }}</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" [(ngModel)]="notif.enabled" class="sr-only peer">
+                      <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Security -->
+        @if (activeSection() === 'security') {
+          <div class="bg-white rounded-xl shadow-sm">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h2 class="text-lg font-semibold text-gray-900">Security Settings</h2>
+            </div>
+            <div class="p-6 space-y-6">
+              <div>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" [(ngModel)]="settings.twoFactorEnabled" class="w-4 h-4 text-blue-600 rounded">
+                  <span class="text-sm font-medium text-gray-700">Require Two-Factor Authentication for Admin</span>
+                </label>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Session Timeout (minutes)</label>
+                <input type="number" [(ngModel)]="settings.sessionTimeout" min="5" max="1440" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password Requirements</label>
+                <div class="space-y-2 mt-2">
+                  <label class="flex items-center gap-2">
+                    <input type="checkbox" [(ngModel)]="settings.requireUppercase" class="w-4 h-4 text-blue-600 rounded">
+                    <span class="text-sm text-gray-600">Require uppercase letter</span>
+                  </label>
+                  <label class="flex items-center gap-2">
+                    <input type="checkbox" [(ngModel)]="settings.requireNumber" class="w-4 h-4 text-blue-600 rounded">
+                    <span class="text-sm text-gray-600">Require number</span>
+                  </label>
+                  <label class="flex items-center gap-2">
+                    <input type="checkbox" [(ngModel)]="settings.requireSpecialChar" class="w-4 h-4 text-blue-600 rounded">
+                    <span class="text-sm text-gray-600">Require special character</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Save Button -->
+        <div class="mt-6 flex justify-end">
+          <button 
+            (click)="saveSettings()"
+            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<app-footer />

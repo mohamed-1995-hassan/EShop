@@ -1,0 +1,90 @@
+<div class="flex min-h-screen bg-gray-100">
+  <app-sidebar [isOpen]="sidebarOpen()" />
+  <div class="flex-1 flex flex-col">
+    <app-nav />
+    <main class="flex-1 p-6 overflow-auto">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Manage Orders</h1>
+        <div class="flex items-center space-x-4">
+          <select 
+            [(ngModel)]="statusFilter"
+            (change)="loadOrders()"
+            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Processing">Processing</option>
+            <option value="Shipped">Shipped</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+      
+      @if (loading()) {
+        <app-loading message="Loading orders..." />
+      } @else {
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <table class="w-full">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              @for (order of orders(); track order.id) {
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4">
+                    <a [routerLink]="['/admin/orders', order.id]" class="text-primary-600 hover:text-primary-700 font-medium">
+                      #{{ order.orderNumber }}
+                    </a>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-900">{{ order.customerName }}</td>
+                  <td class="px-6 py-4 text-sm text-gray-500">{{ order.createdAt | date:'medium' }}</td>
+                  <td class="px-6 py-4">
+                    <span 
+                      class="px-2 py-1 text-xs rounded-full"
+                      [class.bg-yellow-100]="order.status === 'Pending'"
+                      [class.text-yellow-800]="order.status === 'Pending'"
+                      [class.bg-blue-100]="order.status === 'Processing'"
+                      [class.text-blue-800]="order.status === 'Processing'"
+                      [class.bg-purple-100]="order.status === 'Shipped'"
+                      [class.text-purple-800]="order.status === 'Shipped'"
+                      [class.bg-green-100]="order.status === 'Delivered'"
+                      [class.text-green-800]="order.status === 'Delivered'"
+                      [class.bg-red-100]="order.status === 'Cancelled'"
+                      [class.text-red-800]="order.status === 'Cancelled'"
+                    >
+                      {{ order.status }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ order.total | currency }}</td>
+                  <td class="px-6 py-4 text-right">
+                    <a [routerLink]="['/admin/orders', order.id]" class="text-primary-600 hover:text-primary-700 mr-3">View</a>
+                    @if (order.status === 'Processing') {
+                      <button (click)="shipOrder(order)" class="text-purple-600 hover:text-purple-700 mr-3">Ship</button>
+                    }
+                    @if (order.status === 'Shipped') {
+                      <button (click)="deliverOrder(order.id)" class="text-green-600 hover:text-green-700">Deliver</button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          
+          @if (orders().length === 0) {
+            <div class="p-8 text-center text-gray-500">
+              No orders found
+            </div>
+          }
+        </div>
+      }
+    </main>
+  </div>
+</div>

@@ -1,0 +1,112 @@
+<aside 
+  class="bg-gray-900 text-gray-300 w-64 min-h-screen flex flex-col transition-transform duration-300"
+  [class.-translate-x-full]="!isOpen()"
+  [class.translate-x-0]="isOpen()"
+>
+  <!-- Logo -->
+  <div class="p-4 border-b border-gray-800">
+    <a routerLink="/admin" class="flex items-center space-x-2">
+      <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+        <span class="text-white font-bold">E</span>
+      </div>
+      <span class="text-white font-semibold text-lg">EShop Admin</span>
+    </a>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="flex-1 p-4 overflow-y-auto">
+    <ul class="space-y-1">
+      @for (item of menuItems; track item.route) {
+        <li>
+          @if (item.children) {
+            <button
+              (click)="toggleSubmenu(item.route)"
+              class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm hover:bg-gray-800 transition-colors"
+              [class.bg-gray-800]="isSubmenuOpen(item.route)"
+            >
+              <span class="flex items-center">
+                <span [innerHTML]="item.icon" class="w-5 h-5 mr-3"></span>
+                {{ item.label }}
+              </span>
+              <svg 
+                class="w-4 h-4 transition-transform"
+                [class.rotate-180]="isSubmenuOpen(item.route)"
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+            @if (isSubmenuOpen(item.route)) {
+              <ul class="mt-1 ml-4 space-y-1">
+                @for (child of item.children; track child.route) {
+                  <li>
+                    <a
+                      [routerLink]="child.route"
+                      routerLinkActive="bg-primary-600 text-white"
+                      class="flex items-center px-4 py-2 rounded-lg text-sm hover:bg-gray-800 transition-colors"
+                    >
+                      <span [innerHTML]="child.icon" class="w-4 h-4 mr-3"></span>
+                      {{ child.label }}
+                      @if (child.badge) {
+                        <span class="ml-auto bg-primary-600 text-white text-xs px-2 py-0.5 rounded-full">
+                          {{ child.badge }}
+                        </span>
+                      }
+                    </a>
+                  </li>
+                }
+              </ul>
+            }
+          } @else {
+            <a
+              [routerLink]="item.route"
+              routerLinkActive="bg-primary-600 text-white"
+              [routerLinkActiveOptions]="{exact: item.route === '/admin/dashboard'}"
+              class="flex items-center px-4 py-2.5 rounded-lg text-sm hover:bg-gray-800 transition-colors"
+            >
+              <span [innerHTML]="item.icon" class="w-5 h-5 mr-3"></span>
+              {{ item.label }}
+              @if (item.badge) {
+                <span class="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  {{ item.badge }}
+                </span>
+              }
+            </a>
+          }
+        </li>
+      }
+    </ul>
+  </nav>
+
+  <!-- User Section -->
+  <div class="p-4 border-t border-gray-800">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
+        @if (auth.user()?.avatar) {
+          <img [src]="auth.user()?.avatar" alt="Avatar" class="w-10 h-10 rounded-full object-cover">
+        } @else {
+          <span class="text-white font-medium">
+            {{ auth.user()?.firstName?.charAt(0) }}{{ auth.user()?.lastName?.charAt(0) }}
+          </span>
+        }
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium text-white truncate">
+          {{ auth.user()?.firstName }} {{ auth.user()?.lastName }}
+        </p>
+        <p class="text-xs text-gray-400 truncate">{{ auth.user()?.email }}</p>
+      </div>
+      <button 
+        (click)="auth.logout()"
+        class="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+        title="Logout"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</aside>
