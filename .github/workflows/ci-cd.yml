@@ -32,20 +32,44 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+      
       - name: Restore dependencies
         run: dotnet restore EShop.sln
       
       - name: Build
         run: dotnet build EShop.sln --configuration Release --no-restore
       
-      - name: Run tests
-        run: dotnet test EShop.sln --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage
+      - name: Run Domain Tests
+        run: dotnet test tests/EShop.Domain.Tests/EShop.Domain.Tests.csproj --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage/domain
+      
+      - name: Run Infrastructure Tests
+        run: dotnet test tests/EShop.Infrastructure.Tests/EShop.Infrastructure.Tests.csproj --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage/infrastructure
+      
+      - name: Merge Coverage Reports
+        run: |
+          dotnet tool install -g dotnet-reportgenerator-globaltool
+          reportgenerator -reports:"./coverage/**/coverage.cobertura.xml" -targetdir:"./coverage/merged" -reporttypes:"Cobertura;HtmlSummary"
       
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           directory: ./coverage
           fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: ./coverage
 
   # ================================
   # Code Quality

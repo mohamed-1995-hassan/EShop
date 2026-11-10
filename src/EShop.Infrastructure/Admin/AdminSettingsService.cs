@@ -1,7 +1,6 @@
 using EShop.Application.DTOs;
 using EShop.Application.Interfaces.Admin;
-using EShop.Infrastructure.Caching;
-using EShop.Infrastructure.Persistence;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
@@ -10,11 +9,11 @@ namespace EShop.Infrastructure.Admin;
 
 /// <summary>
 /// Implementation of admin settings management service
+/// Uses in-memory storage for demo purposes. In production, use a database table.
 /// </summary>
 public class AdminSettingsService : IAdminSettingsService
 {
-    private readonly EShopDbContext _dbContext;
-    private readonly ICacheService _cacheService;
+    private readonly IDistributedCache? _cache;
     private readonly ILogger<AdminSettingsService> _logger;
 
     // In-memory settings storage (in production, use a database table)
@@ -86,13 +85,11 @@ public class AdminSettingsService : IAdminSettingsService
     };
 
     public AdminSettingsService(
-        EShopDbContext dbContext,
-        ICacheService cacheService,
-        ILogger<AdminSettingsService> logger)
+        ILogger<AdminSettingsService> logger,
+        IDistributedCache? cache = null)
     {
-        _dbContext = dbContext;
-        _cacheService = cacheService;
         _logger = logger;
+        _cache = cache;
     }
 
     #region General Settings
@@ -303,10 +300,14 @@ public class AdminSettingsService : IAdminSettingsService
             // Clear all cache - would need pattern-based deletion in Redis
             _logger.LogInformation("Full cache clear requested");
         }
+        else if (_cache != null)
+        {
+            await _cache.RemoveAsync(cacheKey, cancellationToken);
+            _logger.LogInformation("Cache cleared for key: {CacheKey}", cacheKey);
+        }
         else
         {
-            await _cacheService.RemoveAsync(cacheKey, cancellationToken);
-            _logger.LogInformation("Cache cleared for key: {CacheKey}", cacheKey);
+            _logger.LogWarning("Cache service not available, cannot clear cache for key: {CacheKey}", cacheKey);
         }
     }
 

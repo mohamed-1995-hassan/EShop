@@ -78,6 +78,10 @@
     
     <!-- Email Providers -->
     <PackageReference Include="SendGrid" Version="9.29.3" />
+    
+    <!-- Health Checks -->
+    <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="8.0.2" />
+    <PackageReference Include="AspNetCore.HealthChecks.Redis" Version="8.0.1" />
   </ItemGroup>
 
 </Project>

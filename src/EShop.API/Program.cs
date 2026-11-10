@@ -1,17 +1,58 @@
+using EShop.API.Configuration;
+using EShop.API.Middleware;
+using EShop.Application.Behaviors;
 using EShop.Application.Commands.Orders;
 using EShop.Application.Interfaces;
 using EShop.Application.Services;
+using EShop.Application.Validation;
 using EShop.Domain.Repositories;
 using EShop.Infrastructure;
 using EShop.Infrastructure.DomainEvents;
 using EShop.Infrastructure.Email;
+using EShop.Infrastructure.Health;
 using EShop.Infrastructure.Identity;
 using EShop.Infrastructure.Payments.Stripe;
+using EShop.Infrastructure.Persistence;
 using EShop.Infrastructure.Repositories;
 using EShop.Infrastructure.Services;
+using FluentValidation;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
+// ═══════════════════════════════════════════════════════════════════════════
+// SERILOG BOOTSTRAP - Must be first for early logging
+// ═══════════════════════════════════════════════════════════════════════════
 var builder = WebApplication.CreateBuilder(args);
+builder.AddSerilogLogging();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CROSS-CUTTING CONCERNS
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Global Exception Handler (RFC 7807 Problem Details)
+builder.Services.AddGlobalExceptionHandler();
+
+// Response Compression (Brotli/Gzip)
+builder.Services.AddCompressionConfiguration();
+
+// CORS Configuration
+builder.Services.AddCorsConfiguration(builder.Configuration);
+
+// API Versioning
+builder.Services.AddApiVersioningConfiguration();
+
+// Health Checks
+builder.Services.AddHealthCheckServices(builder.Configuration);
+
+// Rate Limiting (NEW)
+builder.Services.AddRateLimitingConfiguration(builder.Configuration);
+
+// Output Cache (Response Caching)
+builder.Services.AddOutputCacheConfiguration();
+
+// Audit Interceptor for automatic audit trail
+builder.Services.AddAuditInterceptor();
 
 // ═══════════════════════════════════════════════════════════════════════════
 // DEPENDENCY INJECTION - Following DDD + Clean Architecture principles
@@ -22,7 +63,15 @@ builder.Services.AddMediatR(cfg =>
 {
     // Register ALL handlers from Application layer (Commands, Queries, Events)
     cfg.RegisterServicesFromAssembly(typeof(CreateOrderCommand).Assembly);
+    
+    // Add pipeline behaviors for cross-cutting concerns
+    cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+    cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+    cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
 });
+
+// FluentValidation - Auto-register all validators from Application assembly
+builder.Services.AddValidatorsFromAssemblyContaining<CreateOrderCommandValidator>();
 
 // ───────────────────────────────────────────────────────────────────────────
 // DOMAIN LAYER - No dependencies to register (pure C# classes)
@@ -44,6 +93,32 @@ builder.Services.AddIdentityServices(builder.Configuration);
 // ───────────────────────────────────────────────────────────────────────────
 
 builder.Services.AddStripePayments(builder.Configuration);
+
+// ───────────────────────────────────────────────────────────────────────────
+// INFRASTRUCTURE LAYER - Database Context (EF Core)
+// ───────────────────────────────────────────────────────────────────────────
+
+// Register EShopDbContext - uses PostgreSQL if available, falls back to InMemory
+var connectionString = builder.Configuration.GetConnectionString("Database");
+if (!string.IsNullOrEmpty(connectionString))
+{
+    builder.Services.AddDbContext<EShopDbContext>(options =>
+    {
+        options.UseNpgsql(connectionString, npgsqlOptions =>
+        {
+            npgsqlOptions.EnableRetryOnFailure(3);
+            npgsqlOptions.CommandTimeout(30);
+        });
+    });
+}
+else
+{
+    // Fallback to InMemory database for local development without PostgreSQL
+    builder.Services.AddDbContext<EShopDbContext>(options =>
+    {
+        options.UseInMemoryDatabase("EShopLocalDb");
+    });
+}
 
 // ───────────────────────────────────────────────────────────────────────────
 // INFRASTRUCTURE LAYER - Repository Implementations
@@ -111,7 +186,12 @@ builder.Services.AddAdminServices();
 // ───────────────────────────────────────────────────────────────────────────
 // ASP.NET Core / Presentation Layer
 // ───────────────────────────────────────────────────────────────────────────
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Serialize enums as strings in JSON
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -145,6 +225,9 @@ builder.Services.AddSwaggerGen(c =>
             """
     });
     
+    // Handle duplicate type names by using full name
+    c.CustomSchemaIds(type => type.FullName?.Replace("+", ".") ?? type.Name);
+    
     // Add JWT Authentication to Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -177,6 +260,24 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+// Global Exception Handler (first in pipeline to catch all errors)
+app.UseGlobalExceptionHandler();
+
+// Serilog Request Logging (after exception handler)
+app.UseSerilogRequestLoggingMiddleware();
+
+// Response Compression
+app.UseResponseCompression();
+
+// Rate Limiting (before other middleware to protect resources)
+app.UseRateLimitingMiddleware();
+
+// Output Cache (after rate limiting, before endpoints)
+app.UseOutputCacheMiddleware();
+
+// Health Check Endpoints (before auth so they're publicly accessible)
+app.UseHealthCheckEndpoints();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -185,6 +286,14 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "EShop DDD Demo v1");
         c.DocumentTitle = "DDD Demo API";
     });
+    
+    // Use permissive CORS in development
+    app.UseCors("Development");
+}
+else
+{
+    // Use configured CORS policy in production
+    app.UseCors(CorsConfiguration.PolicyName);
 }
 
 app.UseHttpsRedirection();
@@ -211,6 +320,18 @@ Console.WriteLine("""
     ║  • DigitalProduct • Affiliate      • Coupon          • Catalog            ║
     ║  • Analytics      • Content        • Support         • Supplier           ║
     ║                                                                           ║
+    ║  PRODUCTION FEATURES:                                                     ║
+    ║  ─────────────────────                                                    ║
+    ║  ✓ Global Exception Handler (RFC 7807 Problem Details)                    ║
+    ║  ✓ Response Compression (Brotli/Gzip)                                     ║
+    ║  ✓ CORS Configuration                                                     ║
+    ║  ✓ API Versioning                                                         ║
+    ║  ✓ Health Checks (/health/live, /health/ready)                            ║
+    ║  ✓ API Rate Limiting (Fixed/Sliding Window, Token Bucket)     [NEW]       ║
+    ║  ✓ Structured Logging (Serilog + Seq)                         [NEW]       ║
+    ║  ✓ FluentValidation (Command/Query validation)                [NEW]       ║
+    ║  ✓ Audit Trail (CreatedBy, ModifiedBy, DeletedBy)            [NEW]       ║
+    ║                                                                           ║
     ║  PATTERNS DEMONSTRATED:                                                   ║
     ║  ─────────────────────                                                    ║
     ║  ✓ Rich Domain Model (aggregates with business rules)                     ║
@@ -222,6 +343,22 @@ Console.WriteLine("""
     ║  ✓ JWT Authentication with Refresh Token Rotation                         ║
     ║  ✓ Role-Based Authorization (Admin, Customer, Vendor)                     ║
     ║  ✓ OAuth Support (Google, Facebook, Apple, Microsoft)                     ║
+    ║  ✓ MediatR Pipeline Behaviors (Validation, Logging, Performance)          ║
+    ║                                                                           ║
+    ║  HEALTH ENDPOINTS:                                                        ║
+    ║  ─────────────────                                                        ║
+    ║  GET /health       - Full health status                                   ║
+    ║  GET /health/live  - Liveness probe (K8s)                                 ║
+    ║  GET /health/ready - Readiness probe (K8s)                                ║
+    ║                                                                           ║
+    ║  RATE LIMITING POLICIES:                                                  ║
+    ║  ───────────────────────                                                  ║
+    ║  • fixed          - 100 req/min (general API)                             ║
+    ║  • sliding        - 100 req/min (smooth distribution)                     ║
+    ║  • token-bucket   - 50 tokens, 10/sec refill (burst support)              ║
+    ║  • auth           - 10 req/min (brute force protection)                   ║
+    ║  • payment        - 5 req/min (fraud protection)                          ║
+    ║  • per-user       - 100 req/min per user/IP                               ║
     ║                                                                           ║
     ║  API ENDPOINTS (28 controllers):                                          ║
     ║  ───────────────────────────────                                          ║
@@ -252,15 +389,6 @@ Console.WriteLine("""
     ║  /api/content          - Banners, FAQ, Blog posts                         ║
     ║  /api/support          - Support tickets                                  ║
     ║  /api/suppliers        - Supplier & purchase orders                       ║
-    ║                                                                           ║
-    ║  🔐 AUTHENTICATION FLOW:                                                  ║
-    ║  ───────────────────────                                                  ║
-    ║  POST /api/auth/register     - Create new account                         ║
-    ║  POST /api/auth/login        - Login with email/password                  ║
-    ║  POST /api/auth/refresh      - Refresh access token                       ║
-    ║  POST /api/auth/external-login - OAuth (Google, Facebook, etc.)           ║
-    ║  POST /api/auth/logout       - Revoke refresh token                       ║
-    ║  GET  /api/auth/me           - Get current user info                      ║
     ║                                                                           ║
     ║  Open Swagger UI at: https://localhost:5001/swagger                       ║
     ║                                                                           ║

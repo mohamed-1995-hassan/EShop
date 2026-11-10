@@ -73,7 +73,10 @@ public class CouponsController : ControllerBase
     [HttpPost("bulk")]
     public async Task<ActionResult<IReadOnlyList<Guid>>> GenerateBulk([FromBody] GenerateBulkCouponsRequest request)
     {
-        var ids = await _mediator.Send(new GenerateBulkCouponsCommand(request.Prefix, request.Name, request.DiscountType, request.DiscountValue, request.Quantity, request.UsagePerCoupon));
+        if (!Enum.TryParse<DiscountType>(request.DiscountType, ignoreCase: true, out var discountType))
+            return BadRequest($"Invalid DiscountType. Valid values: {string.Join(", ", Enum.GetNames<DiscountType>())}");
+            
+        var ids = await _mediator.Send(new GenerateBulkCouponsCommand(request.Prefix, request.Name, discountType, request.DiscountValue, request.Quantity, request.UsagePerCoupon));
         return Ok(ids);
     }
 
@@ -117,7 +120,24 @@ public record ValidateCouponRequest(string Code, Guid CustomerId, decimal OrderT
 public record CreatePercentageCouponRequest(string Code, string Name, decimal Percentage, decimal? MaxDiscount = null, int? MaxUsage = null);
 public record CreateFixedAmountCouponRequest(string Code, string Name, decimal Amount, string Currency, int? MaxUsage = null);
 public record CreateFreeShippingCouponRequest(string Code, string Name, int? MaxUsage = null);
-public record GenerateBulkCouponsRequest(string Prefix, string Name, DiscountType DiscountType, decimal DiscountValue, int Quantity, int UsagePerCoupon = 1);
+
+/// <summary>Request to generate bulk coupons</summary>
+public class GenerateBulkCouponsRequest
+{
+    /// <summary>Coupon code prefix</summary>
+    public string Prefix { get; set; } = string.Empty;
+    /// <summary>Coupon name</summary>
+    public string Name { get; set; } = string.Empty;
+    /// <summary>Discount type: Percentage, FixedAmount, or FreeShipping</summary>
+    public string DiscountType { get; set; } = "Percentage";
+    /// <summary>Discount value</summary>
+    public decimal DiscountValue { get; set; }
+    /// <summary>Number of coupons to generate</summary>
+    public int Quantity { get; set; }
+    /// <summary>Usage limit per coupon</summary>
+    public int UsagePerCoupon { get; set; } = 1;
+}
+
 public record ApplyCouponRequest(Guid OrderId, Guid CustomerId, decimal DiscountApplied, string Currency);
 public record CouponSetValidityRequest(DateTime? ValidFrom, DateTime? ValidUntil);
 public record SetMinOrderRequest(decimal MinimumAmount, string Currency);

@@ -64,7 +64,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCategoryRequest request)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCatalogCategoryRequest request)
     {
         await _mediator.Send(new UpdateCategoryCommand(id, request.Name, request.Description, request.ImageUrl, request.IconUrl));
         return NoContent();
@@ -106,9 +106,70 @@ public class CategoriesController : ControllerBase
     }
 }
 
-public record CreateRootCategoryRequest(string Name, string? Description = null, string? ImageUrl = null);
-public record CreateChildCategoryRequest(string Name, Guid ParentId, int Level, string? Description = null);
-public record UpdateCategoryRequest(string Name, string? Description, string? ImageUrl, string? IconUrl);
-public record AddAttributeRequest(string Name, AttributeType Type, bool IsFilterable = true, bool IsSearchable = false);
-public record AddFeaturedProductRequest(Guid ProductId);
-public record SetSeoRequest(string? MetaTitle, string? MetaDescription, string? MetaKeywords);
+/// <summary>Request to create a root category</summary>
+public class CreateRootCategoryRequest
+{
+    /// <summary>Category name</summary>
+    public string Name { get; set; } = string.Empty;
+    /// <summary>Category description</summary>
+    public string? Description { get; set; }
+    /// <summary>Image URL</summary>
+    public string? ImageUrl { get; set; }
+}
+
+/// <summary>Request to create a child category</summary>
+public class CreateChildCategoryRequest
+{
+    /// <summary>Category name</summary>
+    public string Name { get; set; } = string.Empty;
+    /// <summary>Parent category ID</summary>
+    public Guid ParentId { get; set; }
+    /// <summary>Nesting level</summary>
+    public int Level { get; set; }
+    /// <summary>Category description</summary>
+    public string? Description { get; set; }
+}
+
+/// <summary>Request to update a category</summary>
+public class UpdateCatalogCategoryRequest
+{
+    /// <summary>Category name</summary>
+    public string Name { get; set; } = string.Empty;
+    /// <summary>Category description</summary>
+    public string? Description { get; set; }
+    /// <summary>Image URL</summary>
+    public string? ImageUrl { get; set; }
+    /// <summary>Icon URL</summary>
+    public string? IconUrl { get; set; }
+}
+
+/// <summary>Request to add a category attribute</summary>
+public class AddAttributeRequest
+{
+    /// <summary>Attribute name</summary>
+    public string Name { get; set; } = string.Empty;
+    /// <summary>Attribute type</summary>
+    public AttributeType Type { get; set; }
+    /// <summary>Whether attribute is filterable</summary>
+    public bool IsFilterable { get; set; } = true;
+    /// <summary>Whether attribute is searchable</summary>
+    public bool IsSearchable { get; set; } = false;
+}
+
+/// <summary>Request to add a featured product</summary>
+public class AddFeaturedProductRequest
+{
+    /// <summary>Product ID to feature</summary>
+    public Guid ProductId { get; set; }
+}
+
+/// <summary>Request to set SEO metadata</summary>
+public class SetSeoRequest
+{
+    /// <summary>Meta title</summary>
+    public string? MetaTitle { get; set; }
+    /// <summary>Meta description</summary>
+    public string? MetaDescription { get; set; }
+    /// <summary>Meta keywords</summary>
+    public string? MetaKeywords { get; set; }
+}

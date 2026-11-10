@@ -4,8 +4,39 @@ using MediatR;
 
 namespace EShop.Application.Queries.Coupons;
 
-public record CouponDto(Guid Id, string Code, string Name, string? Description, CouponType Type, CouponStatus Status, DiscountType DiscountType, decimal DiscountValue, decimal? MaxDiscountAmount, decimal? MinimumOrderAmount, int? MaxUsageCount, int CurrentUsageCount, int RemainingUsages, DateTime? ValidFrom, DateTime? ValidUntil, bool IsActive);
-public record CouponSummaryDto(Guid Id, string Code, string Name, DiscountType DiscountType, decimal DiscountValue, CouponStatus Status, int RemainingUsages, bool IsActive);
+/// <summary>Full coupon details</summary>
+public class CouponDto
+{
+    public Guid Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string DiscountType { get; set; } = string.Empty;
+    public decimal DiscountValue { get; set; }
+    public decimal? MaxDiscountAmount { get; set; }
+    public decimal? MinimumOrderAmount { get; set; }
+    public int? MaxUsageCount { get; set; }
+    public int CurrentUsageCount { get; set; }
+    public int RemainingUsages { get; set; }
+    public DateTime? ValidFrom { get; set; }
+    public DateTime? ValidUntil { get; set; }
+    public bool IsActive { get; set; }
+}
+
+/// <summary>Coupon summary for lists</summary>
+public class CouponSummaryDto
+{
+    public Guid Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string DiscountType { get; set; } = string.Empty;
+    public decimal DiscountValue { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public int RemainingUsages { get; set; }
+    public bool IsActive { get; set; }
+}
 
 public record GetCouponQuery(Guid Id) : IRequest<CouponDto?>;
 public record GetCouponByCodeQuery(string Code) : IRequest<CouponDto?>;
@@ -21,7 +52,27 @@ public class GetCouponHandler : IRequestHandler<GetCouponQuery, CouponDto?>
     public async Task<CouponDto?> Handle(GetCouponQuery request, CancellationToken ct)
     {
         var c = await _repo.GetByIdAsync(request.Id, ct);
-        return c == null ? null : new CouponDto(c.Id, c.Code, c.Name, c.Description, c.Type, c.Status, c.DiscountType, c.DiscountValue, c.MaxDiscountAmount?.Amount, c.MinimumOrderAmount?.Amount, c.MaxUsageCount, c.CurrentUsageCount, c.RemainingUsages, c.ValidFrom, c.ValidUntil, c.IsActive);
+        if (c == null) return null;
+        
+        return new CouponDto
+        {
+            Id = c.Id,
+            Code = c.Code,
+            Name = c.Name,
+            Description = c.Description,
+            Type = c.Type.ToString(),
+            Status = c.Status.ToString(),
+            DiscountType = c.DiscountType.ToString(),
+            DiscountValue = c.DiscountValue,
+            MaxDiscountAmount = c.MaxDiscountAmount?.Amount,
+            MinimumOrderAmount = c.MinimumOrderAmount?.Amount,
+            MaxUsageCount = c.MaxUsageCount,
+            CurrentUsageCount = c.CurrentUsageCount,
+            RemainingUsages = c.RemainingUsages,
+            ValidFrom = c.ValidFrom,
+            ValidUntil = c.ValidUntil,
+            IsActive = c.IsActive
+        };
     }
 }
 
@@ -33,7 +84,27 @@ public class GetCouponByCodeHandler : IRequestHandler<GetCouponByCodeQuery, Coup
     public async Task<CouponDto?> Handle(GetCouponByCodeQuery request, CancellationToken ct)
     {
         var c = await _repo.GetByCodeAsync(request.Code, ct);
-        return c == null ? null : new CouponDto(c.Id, c.Code, c.Name, c.Description, c.Type, c.Status, c.DiscountType, c.DiscountValue, c.MaxDiscountAmount?.Amount, c.MinimumOrderAmount?.Amount, c.MaxUsageCount, c.CurrentUsageCount, c.RemainingUsages, c.ValidFrom, c.ValidUntil, c.IsActive);
+        if (c == null) return null;
+        
+        return new CouponDto
+        {
+            Id = c.Id,
+            Code = c.Code,
+            Name = c.Name,
+            Description = c.Description,
+            Type = c.Type.ToString(),
+            Status = c.Status.ToString(),
+            DiscountType = c.DiscountType.ToString(),
+            DiscountValue = c.DiscountValue,
+            MaxDiscountAmount = c.MaxDiscountAmount?.Amount,
+            MinimumOrderAmount = c.MinimumOrderAmount?.Amount,
+            MaxUsageCount = c.MaxUsageCount,
+            CurrentUsageCount = c.CurrentUsageCount,
+            RemainingUsages = c.RemainingUsages,
+            ValidFrom = c.ValidFrom,
+            ValidUntil = c.ValidUntil,
+            IsActive = c.IsActive
+        };
     }
 }
 
@@ -45,7 +116,17 @@ public class GetActiveCouponsHandler : IRequestHandler<GetActiveCouponsQuery, IR
     public async Task<IReadOnlyList<CouponSummaryDto>> Handle(GetActiveCouponsQuery request, CancellationToken ct)
     {
         var coupons = await _repo.GetActiveAsync(ct);
-        return coupons.Select(c => new CouponSummaryDto(c.Id, c.Code, c.Name, c.DiscountType, c.DiscountValue, c.Status, c.RemainingUsages, c.IsActive)).ToList();
+        return coupons.Select(c => new CouponSummaryDto
+        {
+            Id = c.Id,
+            Code = c.Code,
+            Name = c.Name,
+            DiscountType = c.DiscountType.ToString(),
+            DiscountValue = c.DiscountValue,
+            Status = c.Status.ToString(),
+            RemainingUsages = c.RemainingUsages,
+            IsActive = c.IsActive
+        }).ToList();
     }
 }
 
@@ -57,7 +138,17 @@ public class GetExpiringSoonCouponsHandler : IRequestHandler<GetExpiringSoonCoup
     public async Task<IReadOnlyList<CouponSummaryDto>> Handle(GetExpiringSoonCouponsQuery request, CancellationToken ct)
     {
         var coupons = await _repo.GetExpiringSoonAsync(request.WithinDays, ct);
-        return coupons.Select(c => new CouponSummaryDto(c.Id, c.Code, c.Name, c.DiscountType, c.DiscountValue, c.Status, c.RemainingUsages, c.IsActive)).ToList();
+        return coupons.Select(c => new CouponSummaryDto
+        {
+            Id = c.Id,
+            Code = c.Code,
+            Name = c.Name,
+            DiscountType = c.DiscountType.ToString(),
+            DiscountValue = c.DiscountValue,
+            Status = c.Status.ToString(),
+            RemainingUsages = c.RemainingUsages,
+            IsActive = c.IsActive
+        }).ToList();
     }
 }
 

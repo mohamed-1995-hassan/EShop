@@ -180,7 +180,7 @@ public class AdminOrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CancelOrder(
         Guid id,
-        [FromBody] CancelOrderRequest? request = null,
+        [FromBody] AdminCancelOrderRequest? request = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -242,7 +242,7 @@ public class AdminOrdersController : ControllerBase
 
 #region Request DTOs
 
-public class CancelOrderRequest
+public class AdminCancelOrderRequest
 {
     public string? Reason { get; init; }
 }

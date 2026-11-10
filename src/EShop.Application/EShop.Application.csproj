@@ -10,10 +10,13 @@
     <ProjectReference Include="..\EShop.Domain\EShop.Domain.csproj" />
   </ItemGroup>
 
-  <!-- MediatR for event handling -->
+  <!-- MediatR for CQRS and pipeline behaviors -->
   <ItemGroup>
     <PackageReference Include="MediatR" Version="12.2.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+    <!-- FluentValidation for command/query validation -->
+    <PackageReference Include="FluentValidation" Version="11.10.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.10.0" />
   </ItemGroup>
 
 </Project>
