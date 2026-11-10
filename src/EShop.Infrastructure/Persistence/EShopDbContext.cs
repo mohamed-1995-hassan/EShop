@@ -1,3 +1,4 @@
+using EShop.Domain.Aggregates.IdentityAggregate;
 using EShop.Domain.Aggregates.OrderAggregate;
 using EShop.Domain.Aggregates.ProductAggregate;
 using EShop.Domain.Common;
@@ -36,6 +37,11 @@ public class EShopDbContext : DbContext
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Customer> Customers => Set<Customer>();
+
+    // Identity Aggregate
+    public DbSet<User> Users => Set<User>();
+    public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     // Outbox for reliable event publishing
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();

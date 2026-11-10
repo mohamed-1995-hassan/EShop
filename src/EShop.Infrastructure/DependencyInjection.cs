@@ -2,6 +2,7 @@ using EShop.Domain.Repositories;
 using EShop.Infrastructure.Caching;
 using EShop.Infrastructure.CQRS;
 using EShop.Infrastructure.DistributedLocking;
+using EShop.Infrastructure.Email;
 using EShop.Infrastructure.EventSourcing;
 using EShop.Infrastructure.Idempotency;
 using EShop.Infrastructure.Messaging.Configuration;
@@ -67,6 +68,9 @@ public static class DependencyInjection
         {
             services.AddCQRS();
         }
+
+        // Email Services (SendGrid, Amazon SES, SMTP)
+        services.AddEmailServices(configuration);
 
         return services;
     }
@@ -273,5 +277,13 @@ public static class DependencyInjection
         services.AddRepositories();
 
         return services;
+    }
+
+    /// <summary>
+    /// Add admin dashboard and management services
+    /// </summary>
+    public static IServiceCollection AddAdminServices(this IServiceCollection services)
+    {
+        return EShop.Infrastructure.Admin.AdminDependencyInjection.AddAdminServices(services);
     }
 }

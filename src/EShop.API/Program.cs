@@ -1,10 +1,15 @@
 using EShop.Application.Commands.Orders;
-using EShop.Application.EventHandlers;
+using EShop.Application.Interfaces;
 using EShop.Application.Services;
 using EShop.Domain.Repositories;
+using EShop.Infrastructure;
 using EShop.Infrastructure.DomainEvents;
+using EShop.Infrastructure.Email;
+using EShop.Infrastructure.Identity;
+using EShop.Infrastructure.Payments.Stripe;
 using EShop.Infrastructure.Repositories;
 using EShop.Infrastructure.Services;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +32,18 @@ builder.Services.AddMediatR(cfg =>
 // APPLICATION LAYER - Application Services
 // ───────────────────────────────────────────────────────────────────────────
 builder.Services.AddScoped<IOrderAppService, OrderAppService>();
+
+// ───────────────────────────────────────────────────────────────────────────
+// AUTHENTICATION & AUTHORIZATION
+// ───────────────────────────────────────────────────────────────────────────
+
+builder.Services.AddIdentityServices(builder.Configuration);
+
+// ───────────────────────────────────────────────────────────────────────────
+// PAYMENT GATEWAY - STRIPE
+// ───────────────────────────────────────────────────────────────────────────
+
+builder.Services.AddStripePayments(builder.Configuration);
 
 // ───────────────────────────────────────────────────────────────────────────
 // INFRASTRUCTURE LAYER - Repository Implementations
@@ -81,9 +98,15 @@ builder.Services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
 builder.Services.AddScoped<IDomainEventDispatcher, MediatRDomainEventDispatcher>();
 
 // External Services (fakes for demo)
-builder.Services.AddSingleton<IEmailService, FakeEmailService>();
+// Email: Configured via AddEmailServices - uses FakeEmailService by default, or SendGrid/SES/SMTP based on config
+builder.Services.AddEmailServices(builder.Configuration);
 builder.Services.AddSingleton<IInventoryService, FakeInventoryService>();
 builder.Services.AddSingleton<IPaymentService, FakePaymentService>();
+
+// ───────────────────────────────────────────────────────────────────────────
+// ADMIN DASHBOARD SERVICES
+// ───────────────────────────────────────────────────────────────────────────
+builder.Services.AddAdminServices();
 
 // ───────────────────────────────────────────────────────────────────────────
 // ASP.NET Core / Presentation Layer
@@ -99,7 +122,8 @@ builder.Services.AddSwaggerGen(c =>
         Description = """
             A complete Domain-Driven Design demo with:
             
-            AGGREGATES (27 total):
+            AGGREGATES (28 total):
+            - Identity (User, Roles, RefreshTokens, ExternalLogins)
             - Order, Customer, Product, Payment, Shipment
             - Cart, Promotion, Review, Return, Inventory
             - Wishlist, Subscription, GiftCard, Vendor
@@ -114,9 +138,36 @@ builder.Services.AddSwaggerGen(c =>
             - Domain Events for decoupled integrations
             - Repository Pattern (interface in Domain)
             - Clean Architecture layers
+            - JWT Authentication with Refresh Tokens
+            - Role-Based Authorization
             
             Try the endpoints to see DDD in action!
             """
+    });
+    
+    // Add JWT Authentication to Swagger
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token.",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+    
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
     });
 });
 
@@ -137,6 +188,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
@@ -149,15 +201,15 @@ Console.WriteLine("""
     ║                                                                           ║
     ╠═══════════════════════════════════════════════════════════════════════════╣
     ║                                                                           ║
-    ║  AGGREGATES (27 total):                                                   ║
+    ║  AGGREGATES (28 total):                                                   ║
     ║  ──────────────────────                                                   ║
-    ║  • Order          • Customer        • Product        • Payment            ║
-    ║  • Shipment       • Cart            • Promotion      • Review             ║
-    ║  • Return         • Inventory       • Wishlist       • Subscription       ║
-    ║  • GiftCard       • Vendor          • Tax            • Currency           ║
-    ║  • Loyalty        • Auction         • Bundle         • DigitalProduct     ║
-    ║  • Affiliate      • Coupon          • Catalog        • Analytics          ║
-    ║  • Content        • Support         • Supplier                            ║
+    ║  • Identity       • Order          • Customer        • Product            ║
+    ║  • Payment        • Shipment       • Cart            • Promotion          ║
+    ║  • Review         • Return         • Inventory       • Wishlist           ║
+    ║  • Subscription   • GiftCard       • Vendor          • Tax                ║
+    ║  • Currency       • Loyalty        • Auction         • Bundle             ║
+    ║  • DigitalProduct • Affiliate      • Coupon          • Catalog            ║
+    ║  • Analytics      • Content        • Support         • Supplier           ║
     ║                                                                           ║
     ║  PATTERNS DEMONSTRATED:                                                   ║
     ║  ─────────────────────                                                    ║
@@ -167,9 +219,13 @@ Console.WriteLine("""
     ║  ✓ Domain Events (70+ events for all aggregates)                          ║
     ║  ✓ Repository Pattern (interface in Domain)                               ║
     ║  ✓ Clean Architecture layers                                              ║
+    ║  ✓ JWT Authentication with Refresh Token Rotation                         ║
+    ║  ✓ Role-Based Authorization (Admin, Customer, Vendor)                     ║
+    ║  ✓ OAuth Support (Google, Facebook, Apple, Microsoft)                     ║
     ║                                                                           ║
-    ║  API ENDPOINTS (27 controllers):                                          ║
+    ║  API ENDPOINTS (28 controllers):                                          ║
     ║  ───────────────────────────────                                          ║
+    ║  /api/auth             - 🔐 Authentication & Authorization                ║
     ║  /api/orders           - Order management                                 ║
     ║  /api/cart             - Shopping cart                                    ║
     ║  /api/products         - Product catalog                                  ║
@@ -196,6 +252,15 @@ Console.WriteLine("""
     ║  /api/content          - Banners, FAQ, Blog posts                         ║
     ║  /api/support          - Support tickets                                  ║
     ║  /api/suppliers        - Supplier & purchase orders                       ║
+    ║                                                                           ║
+    ║  🔐 AUTHENTICATION FLOW:                                                  ║
+    ║  ───────────────────────                                                  ║
+    ║  POST /api/auth/register     - Create new account                         ║
+    ║  POST /api/auth/login        - Login with email/password                  ║
+    ║  POST /api/auth/refresh      - Refresh access token                       ║
+    ║  POST /api/auth/external-login - OAuth (Google, Facebook, etc.)           ║
+    ║  POST /api/auth/logout       - Revoke refresh token                       ║
+    ║  GET  /api/auth/me           - Get current user info                      ║
     ║                                                                           ║
     ║  Open Swagger UI at: https://localhost:5001/swagger                       ║
     ║                                                                           ║

@@ -54,8 +54,11 @@
     <!-- Rate Limiting -->
     <PackageReference Include="System.Threading.RateLimiting" Version="8.0.0" />
     
-    <!-- Security -->
+    <!-- Security & JWT -->
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="8.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.1" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.0.1" />
     
     <!-- Logging -->
     <PackageReference Include="Serilog" Version="4.0.2" />
@@ -69,6 +72,12 @@
     <!-- Validation -->
     <PackageReference Include="FluentValidation" Version="11.10.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.10.0" />
+    
+    <!-- Payment Gateways -->
+    <PackageReference Include="Stripe.net" Version="45.0.0" />
+    
+    <!-- Email Providers -->
+    <PackageReference Include="SendGrid" Version="9.29.3" />
   </ItemGroup>
 
 </Project>

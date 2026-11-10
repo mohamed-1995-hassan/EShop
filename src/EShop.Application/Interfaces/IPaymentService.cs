@@ -1,4 +1,4 @@
-namespace EShop.Application.EventHandlers;
+namespace EShop.Application.Interfaces;
 
 /// <summary>
 /// Payment service interface for payment processing.

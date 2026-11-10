@@ -1,4 +1,4 @@
-using EShop.Application.EventHandlers;
+using EShop.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace EShop.Infrastructure.Services;
